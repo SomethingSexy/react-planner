@@ -21,7 +21,7 @@
     "prop-types": "^15.5.10",
     "react": "^15.6.1",
     "react-dom": "^15.6.1",
-    "react-dragula": "^1.1.17"
+    "react-grid-layout": "^0.14.6"
   },
   "devDependencies": {
     "babel-cli": "^6.9.4",

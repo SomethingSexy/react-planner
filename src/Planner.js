@@ -1,6 +1,8 @@
 import React, { PureComponent } from 'react';
 import PropTypes from 'prop-types';
-import Dragula from 'react-dragula';
+import ReactGridLayout from 'react-grid-layout';
+import 'react-grid-layout/css/styles.css';
+import 'react-resizable/css/styles.css';
 
 export default class Planner extends PureComponent {
   static propTypes = {
@@ -17,27 +19,36 @@ export default class Planner extends PureComponent {
   }
 
   componentDidMount() {
-    Dragula(this.dayContainers, {});
+    // Dragula(this.dayContainers, {});
   }
 
   render() {
     const { days } = this.props;
     return (
-      <div>
-        {days.map(day => {
-          return (
-            <div className="container" ref={container => { this.dayContainers.push(container); }}>
-              <div>Swap me around</div>
-              <div>Swap her around</div>
-              <div>Swap him around</div>
-              <div>Swap them around</div>
-              <div>Swap us around</div>
-              <div>Swap things around</div>
-              <div>Swap everything around</div>
-            </div>
-          );
-        })}
-      </div>
+      <ReactGridLayout className="layout" cols={days.length} rowHeight={30} width={1200}>
+        <div key="a" data-grid={{x: 0, y: 0, w: 1, h: 2, static: true }}>a</div>
+        <div key="b" data-grid={{x: 0, y: 2, w: 1, h: 2, minW: 2, maxW: 4}}>b</div>
+        <div key="c" data-grid={{x: 0, y: 1, w: 1, h: 2 }}>c</div>
+      </ReactGridLayout>
     );
+
+    // return (
+    //   <div>
+    //     {days.map(day => {
+    //       return (
+    //         <div className="day" style={{ width: '200px', float: 'left' }}>
+    //           <div className="header">
+    //             <h6>{day.label}</h6>
+    //           </div>
+    //           <div className="plans" ref={container => { this.dayContainers.push(container); }}>
+    //             {day.plans.map(plan => {
+    //               return <div style={{ marginTop: '10px' }}>{plan.label}</div>;
+    //             })}
+    //           </div>
+    //         </div>
+    //       );
+    //     })}
+    //   </div>
+    // );
   }
 }
