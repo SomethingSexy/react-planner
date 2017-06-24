@@ -1,0 +1,30 @@
+{
+  "parser": "babel-eslint",
+  "extends": "airbnb",
+  "plugins": [
+    "babel"
+  ],
+  "rules": {
+    "import/extensions": 0,
+    "arrow-parens": ["error", "as-needed"],
+    "comma-dangle": [2, "never"],
+    "generator-star-spacing": 0,
+    "max-len": [2, 120, 2, {
+      "ignoreUrls": true,
+      "ignoreComments": true
+    }],
+    "no-underscore-dangle": 0,
+    "react/jsx-handler-names": [2, {
+      "eventHandlerPrefix": "handle",
+      "eventHandlerPropPrefix": "on"
+    }],
+    "react/jsx-max-props-per-line": [2, { "maximum": 4 }],
+    "react/no-unused-prop-types": 0,
+    "react/jsx-filename-extension": [1, { "extensions": [".js", ".jsx"] }],
+    "react/jsx-sort-props": [1, { callbacksLast: true }],
+    "react/sort-prop-types": [1, { callbacksLast: true }]
+  },
+  "ecmaFeatures": {
+    "restParams":  true
+  }
+}
