@@ -25,10 +25,10 @@ export default class Planner extends PureComponent {
   render() {
     const { days } = this.props;
     return (
-      <ReactGridLayout className="layout" cols={days.length} rowHeight={30} width={1200}>
-        <div key="a" data-grid={{x: 0, y: 0, w: 1, h: 2, static: true }}>a</div>
-        <div key="b" data-grid={{x: 0, y: 2, w: 1, h: 2, minW: 2, maxW: 4}}>b</div>
-        <div key="c" data-grid={{x: 0, y: 1, w: 1, h: 2 }}>c</div>
+      <ReactGridLayout className="layout" cols={days.length} rowHeight={30} verticalCompact={false} width={1200}>
+        <div key="a" data-grid={{ x: 0, y: 0, w: 1, h: 2, minW: 1, maxW: 1 }}>a</div>
+        <div key="b" data-grid={{ x: 0, y: 2, w: 1, h: 2, minW: 1, maxW: 1 }}>b</div>
+        <div key="c" data-grid={{ x: 0, y: 1, w: 1, h: 2, minW: 1, maxW: 1 }}>c</div>
       </ReactGridLayout>
     );
 
