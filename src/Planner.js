@@ -4,6 +4,29 @@ import ReactGridLayout from 'react-grid-layout';
 import 'react-grid-layout/css/styles.css';
 import 'react-resizable/css/styles.css';
 import uuid from 'uuid';
+import moment from 'moment';
+
+const hours = 24;
+const startHours = 0;
+const endsHours = 24;
+
+const interval = 5; // in minutes for now
+// moment.duration(2, 'minutes');
+const intervals = (60 / interval) * 24;
+
+const times = [];
+let startTime = moment.duration();
+
+for (let x = 0; x < intervals; x++) {
+  if (startTime.get('minutes') + interval === 60) {
+    startTime = moment.duration(startTime.get('hours') + 1, 'hours');
+    // startTime.add(interval, 'minutes');
+  } else if (x !== 0) {
+    startTime.add(interval, 'minutes');
+  }
+
+  times.push({ static: true, x: 0, y: x + 1, w: 1, h: 1, label: `${startTime.get('hours')}:${startTime.get('minutes')}` });
+}
 
 export default class Planner extends PureComponent {
   static propTypes = {
@@ -25,53 +48,31 @@ export default class Planner extends PureComponent {
     // take days an convert them to columns, which would be X.
     // take the schedule and that would b y
     this.planner = props.days.reduce((grids, day, index) => {
-      grids.push({ x: index, y: 0, w: 1, h: 1, static: true, label: day.label, key: uuid.v4() });
+      grids.push({ x: index + 1, y: 0, w: 1, h: 1, static: true, label: day.label, key: uuid.v4() });
       if (day.schedule) {
         return grids.concat(day.schedule.map((item, itemIndex) =>
-          ({ x: index, y: itemIndex, w: 1, h: 1, label: item.label, key: uuid.v4() })
+          ({ x: index + 1, y: itemIndex, w: 1, h: 1, label: item.label, key: uuid.v4() })
         ));
       }
 
       return grids;
     }, []);
-    console.log(this.planner);
-  }
-
-  componentDidMount() {
-    // Dragula(this.dayContainers, {});
   }
 
   render() {
     const { days } = this.props;
-    
 
     return (
-      <ReactGridLayout className="layout" cols={days.length} rowHeight={30} width={1200} verticalCompact={false}>
-        {this.planner.map(plan => {
-          return <div key={plan.key} data-grid={plan}>{plan.label}</div>;
-        })}
+      <ReactGridLayout
+        className="layout"
+        cols={days.length + 1}
+        rowHeight={30}
+        width={1200}
+        verticalCompact={false}
+      >
+        {times.map(time => <div data-grid={time} key={time.label}>{time.label}</div>)}
+        {this.planner.map(plan => <div data-grid={plan} key={plan.key}>{plan.label}</div>)}
       </ReactGridLayout>
     );
-    //    <div key="a" data-grid={{ x: 0, y: 0, w: 1, h: 2, minW: 1, maxW: 1 }}>a</div>
-    //    <div key="b" data-grid={{ x: 0, y: 2, w: 1, h: 2, minW: 1, maxW: 1 }}>b</div>
-    //    <div key="c" data-grid={{ x: 0, y: 1, w: 1, h: 2, minW: 1, maxW: 1 }}>c</div>
-    // return (
-    //   <div>
-    //     {days.map(day => {
-    //       return (
-    //         <div className="day" style={{ width: '200px', float: 'left' }}>
-    //           <div className="header">
-    //             <h6>{day.label}</h6>
-    //           </div>
-    //           <div className="plans" ref={container => { this.dayContainers.push(container); }}>
-    //             {day.plans.map(plan => {
-    //               return <div style={{ marginTop: '10px' }}>{plan.label}</div>;
-    //             })}
-    //           </div>
-    //         </div>
-    //       );
-    //     })}
-    //   </div>
-    // );
   }
 }
