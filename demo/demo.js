@@ -4,9 +4,9 @@ import ReactDOM from 'react-dom';
 import Planner from '../src/Planner.js';
 
 const days = [
-  { label: 'Sunday', plans: [{ label: 'Fun' }, { label: 'Fun' }, { label: 'Fun' }] },
-  { label: 'Monday', plans: [{ label: 'Fun' }, { label: 'Fun' }, { label: 'Fun' }] },
-  { label: 'Tuesday', plans: [{ label: 'Fun' }, { label: 'Fun' }, { label: 'Fun' }] }
+  { label: 'Sunday', schedule: [{ label: 'Fun' }, { label: 'Fun' }, { label: 'Fun' }] },
+  { label: 'Monday', schedule: [{ label: 'Fun' }, { label: 'Fun' }, { label: 'Fun' }] },
+  { label: 'Tuesday', schedule: [{ label: 'Fun' }, { label: 'Fun' }, { label: 'Fun' }] }
 ];
 
 ReactDOM.render(

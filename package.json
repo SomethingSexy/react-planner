@@ -21,7 +21,8 @@
     "prop-types": "^15.5.10",
     "react": "^15.6.1",
     "react-dom": "^15.6.1",
-    "react-grid-layout": "^0.14.6"
+    "react-grid-layout": "^0.14.6",
+    "uuid": "^3.1.0"
   },
   "devDependencies": {
     "babel-cli": "^6.9.4",
