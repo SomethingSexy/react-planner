@@ -18,6 +18,7 @@
   },
   "homepage": "https://github.com/SomethingSexy/react-planner#readme",
   "dependencies": {
+    "invariant": "^2.2.2",
     "lodash": "^4.17.4",
     "moment": "^2.18.1",
     "prop-types": "^15.5.10",
