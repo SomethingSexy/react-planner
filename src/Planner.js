@@ -94,8 +94,16 @@ export default class Planner extends PureComponent {
     // given the plans, create the data necessary for the view
     const gPlans = props.plans.map(plan => {
       const dayTime = lookup[plan.day][plan.time];
-      const y = lookup[plan.day].indexOf(plan.time);
-      return { x: plan.day + 1, y: y + 1, w: 1, h: 1, label: `${dayTime.day} - ${dayTime.time}`, key: plan.id, i: plan.id };
+      const toTime = lookup[plan.day][plan.time + 1];
+      return {
+        x: plan.day + 1,
+        y: plan.time + 1,
+        w: 1,
+        h: 1,
+        label: `${dayTime.day}: ${dayTime.time} - ${toTime.time}`,
+        key: plan.id,
+        i: plan.id
+      };
     });
 
     this.state = {
@@ -108,23 +116,23 @@ export default class Planner extends PureComponent {
     };
   }
 
-  handleChangeTime = (layout, oldItem, newItem) => {
-    console.log(oldItem, newItem);
-    // the grid [0][0] is empty, [0][1] is a label
-    // subtracting 1 will get us to the correct position in the lookup
-    // TODO: Find the plan that we are updating and adjust the time, (also need to readjust around it as well)
-    // if increased and there is a cross section, move that one day, verse for decrease
-    console.log(this.state.lookup[newItem.x - 1][(newItem.y - 1) + (newItem.h - 1)]);
-  }
+  // handleChangeTime = (layout, oldItem, newItem) => {
+  //   console.log(oldItem, newItem);
+  //   // the grid [0][0] is empty, [0][1] is a label
+  //   // subtracting 1 will get us to the correct position in the lookup
+  //   // TODO: Find the plan that we are updating and adjust the time, (also need to readjust around it as well)
+  //   // if increased and there is a cross section, move that one day, verse for decrease
+  //   console.log(this.state.lookup[newItem.x - 1][(newItem.y - 1) + (newItem.h - 1)]);
+  // }
 
-  handleMove = (layout, oldItem, newItem) => {
-    // console.log(_find(layout, { moved: true }));
-    // console.log(layout, oldItem, newItem);
-    // TODO: Need to find the plan that we are moving and upate the schedule, so then we can regenerate the plans
-    // need to also detect if we are moving something else
-    // might need to compare the layout? https://github.com/STRML/react-grid-layout/issues/569
-    // this.setState({ balls: true });
-  }
+  // handleMove = (layout, oldItem, newItem) => {
+  //   // console.log(_find(layout, { moved: true }));
+  //   // console.log(layout, oldItem, newItem);
+  //   // TODO: Need to find the plan that we are moving and upate the schedule, so then we can regenerate the plans
+  //   // need to also detect if we are moving something else
+  //   // might need to compare the layout? https://github.com/STRML/react-grid-layout/issues/569
+  //   // this.setState({ balls: true });
+  // }
 
   handleLayoutChange = layout => {
     const { gPlans, lookup, planIds } = this.state;
@@ -136,7 +144,7 @@ export default class Planner extends PureComponent {
     const changed = nextPlans.filter(nextPlan => {
       const plan = _find(gPlans, { i: nextPlan.i });
       // start with moving
-      if (plan.x !== nextPlan.x || plan.y !== nextPlan.y) {
+      if (plan.x !== nextPlan.x || plan.y !== nextPlan.y || plan.h !== nextPlan.h) {
         return true;
       }
       return false;
@@ -149,11 +157,13 @@ export default class Planner extends PureComponent {
 
         if (nextPlan) {
           const dayTime = lookup[nextPlan.x - 1][nextPlan.y - 1];
+          const toTime = lookup[nextPlan.x - 1][(nextPlan.y - 1) + (nextPlan.h - 1) + 1];
           return {
             ...plan,
-            label: `${dayTime.day} - ${dayTime.time}`,
+            label: `${dayTime.day}: ${dayTime.time} - ${toTime.time}`,
             x: nextPlan.x,
-            y: nextPlan.y
+            y: nextPlan.y,
+            h: nextPlan.h
           };
         }
 
@@ -162,6 +172,7 @@ export default class Planner extends PureComponent {
       this.setState({ gPlans: updatedgPlans });
     }
   }
+
   render() {
     const { days } = this.props;
     const { gDaysOfWeek, gTimes, gPlans } = this.state;
@@ -175,8 +186,8 @@ export default class Planner extends PureComponent {
         width={1200}
         onLayoutChange={this.handleLayoutChange}
         // use this to determine if we are increase or decreasing time
-        onResizeStop={this.handleChangeTime}
-        onDragStop={this.handleMove}
+        // onResizeStop={this.handleChangeTime}
+        // onDragStop={this.handleMove}
       >
         {gTimes.map(time => <div data-grid={time} key={time.label}>{time.label}</div>)}
         {gDaysOfWeek.map(day => <div data-grid={day} key={day.label}>{day.label}</div>)}
