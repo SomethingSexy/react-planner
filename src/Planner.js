@@ -7,20 +7,13 @@ import _find from 'lodash/find.js';
 import uuid from 'uuid';
 import moment from 'moment';
 import invariant from 'invariant';
+import { DAYS } from './constants.js';
+import Day from './Day.js';
+import Time from './Time.js';
 
 const MINUTES = 60;
 const validIntervals = [1, 5, 15, 30, 1];
 const intervalMatch = /(\d+)(m|h)+/g;
-
-const DAYS = {
-  0: 'Sunday',
-  1: 'Monday',
-  2: 'Tuesday',
-  3: 'Wednesday',
-  4: 'Thursday',
-  5: 'Friday',
-  6: 'Saturday'
-};
 
 const calculateIntervals = (interval, start, end) => {
   const intervals = (MINUTES / interval) * (end - start);
@@ -33,7 +26,6 @@ const calculateIntervals = (interval, start, end) => {
       startTime.add(interval, 'minutes');
     }
     times.push(`${startTime.get('hours')}:${startTime.get('minutes').toString().padStart(2, '0')}`);
-    // times.push({ static: true, x: 0, y: x + 1, w: 1, h: 1, label: `${startTime.get('hours')}:${startTime.get('minutes')}` });
   }
 
   return times;
@@ -85,11 +77,11 @@ export default class Planner extends PureComponent {
     const lookup = props.days.map(day => intervals.map(time => ({ day: DAYS[day], time })));
 
     // times for the view
-    const gTimes = intervals.map((time, index) => ({ static: true, x: 0, y: index + 1, w: 1, h: 1, label: time }));
+    const gTimes = intervals.map((time, index) => ({ static: true, x: 0, y: index + 1, w: 1, h: 1, time }));
 
-    // days for the view
+    // days for the view, unfortunately with the way RGL works we need to add this to direct child
     const gDaysOfWeek = props.days.map(day =>
-      ({ x: day + 1, y: 0, w: 1, h: 1, static: true, label: DAYS[day], key: uuid.v4() }));
+      ({ day, x: day + 1, y: 0, w: 1, h: 1, static: true, key: uuid.v4() }));
 
     // given the plans, create the data necessary for the view
     const gPlans = props.plans.map(plan => {
@@ -115,24 +107,6 @@ export default class Planner extends PureComponent {
       lookup
     };
   }
-
-  // handleChangeTime = (layout, oldItem, newItem) => {
-  //   console.log(oldItem, newItem);
-  //   // the grid [0][0] is empty, [0][1] is a label
-  //   // subtracting 1 will get us to the correct position in the lookup
-  //   // TODO: Find the plan that we are updating and adjust the time, (also need to readjust around it as well)
-  //   // if increased and there is a cross section, move that one day, verse for decrease
-  //   console.log(this.state.lookup[newItem.x - 1][(newItem.y - 1) + (newItem.h - 1)]);
-  // }
-
-  // handleMove = (layout, oldItem, newItem) => {
-  //   // console.log(_find(layout, { moved: true }));
-  //   // console.log(layout, oldItem, newItem);
-  //   // TODO: Need to find the plan that we are moving and upate the schedule, so then we can regenerate the plans
-  //   // need to also detect if we are moving something else
-  //   // might need to compare the layout? https://github.com/STRML/react-grid-layout/issues/569
-  //   // this.setState({ balls: true });
-  // }
 
   handleLayoutChange = layout => {
     const { gPlans, lookup, planIds } = this.state;
@@ -185,12 +159,9 @@ export default class Planner extends PureComponent {
         verticalCompact={false}
         width={1200}
         onLayoutChange={this.handleLayoutChange}
-        // use this to determine if we are increase or decreasing time
-        // onResizeStop={this.handleChangeTime}
-        // onDragStop={this.handleMove}
       >
-        {gTimes.map(time => <div data-grid={time} key={time.label}>{time.label}</div>)}
-        {gDaysOfWeek.map(day => <div data-grid={day} key={day.label}>{day.label}</div>)}
+        {gTimes.map(time => <div data-grid={time} key={time.label}><Time time={time.time} /></div>)}
+        {gDaysOfWeek.map(day => <div data-grid={day} key={day.key}><Day day={day.day} /></div>)}
         {gPlans.map(plan => <div data-grid={plan} key={plan.key}><small>{plan.label}</small></div>)}
       </ReactGridLayout>
     );
