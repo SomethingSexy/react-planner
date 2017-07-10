@@ -13,5 +13,5 @@ const plans = [
 const days = [0, 1, 2, 3, 4, 5, 6];
 
 ReactDOM.render(
-  <div><Planner days={days} plans={plans} /></div>
+  <div><Planner days={days} interval="30m" plans={plans} /></div>
 , document.getElementById('app'));

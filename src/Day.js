@@ -4,7 +4,7 @@ import { DAYS } from './constants.js';
 
 const Day = ({ day }) => {
   const label = DAYS[day];
-  return <div>{label}</div>;
+  return <div><strong>{label}</strong></div>;
 };
 
 Day.propTypes = {

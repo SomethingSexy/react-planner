@@ -48,7 +48,8 @@ export default class Planner extends PureComponent {
         id: PropTypes.string,
         // for now this needs to corresponds to days, 0 - 6
         day: PropTypes.number,
-        // for now time corresponds to the index of the time , change later
+        // for now time corresponds to the index of the interval.
+        // TODO: Convert this to physical time and build from there
         time: PropTypes.number,
         label: PropTypes.string
       })
@@ -71,6 +72,7 @@ export default class Planner extends PureComponent {
     const interval = intervalMatch.exec(props.interval)[1];
     // this will build all time intervals per day, this will get used for future lookups
     const intervals = calculateIntervals(parseInt(interval, 10), props.start, props.end);
+    console.log(intervals);
 
     // construct the lookup table, this will be an array of arrays to fast look up data about
     // the cross section of day and time.  [day][time]
@@ -160,9 +162,9 @@ export default class Planner extends PureComponent {
         width={1200}
         onLayoutChange={this.handleLayoutChange}
       >
-        {gTimes.map(time => <div data-grid={time} key={time.label}><Time time={time.time} /></div>)}
+        {gTimes.map(time => <div data-grid={time} key={time.time}><Time time={time.time} /></div>)}
         {gDaysOfWeek.map(day => <div data-grid={day} key={day.key}><Day day={day.day} /></div>)}
-        {gPlans.map(plan => <div data-grid={plan} key={plan.key}><small>{plan.label}</small></div>)}
+        {gPlans.map(plan => <div data-grid={plan} key={plan.key} style={{ border: '1px solid #eee' }}><small>{plan.label}</small></div>)}
       </ReactGridLayout>
     );
   }
