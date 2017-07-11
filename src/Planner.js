@@ -1,19 +1,23 @@
 import React, { PureComponent } from 'react';
 import PropTypes from 'prop-types';
-import ReactGridLayout from 'react-grid-layout';
+import ReactGridLayout, { WidthProvider } from 'react-grid-layout';
 import 'react-grid-layout/css/styles.css';
 import 'react-resizable/css/styles.css';
 import _find from 'lodash/find.js';
 import uuid from 'uuid';
 import moment from 'moment';
 import invariant from 'invariant';
-import { DAYS } from './constants.js';
+import { DAYS, INTERVALS } from './constants.js';
 import Day from './Day.js';
 import Time from './Time.js';
+
+const WidthReactGridLayout = WidthProvider(ReactGridLayout);
 
 const MINUTES = 60;
 const validIntervals = [1, 5, 15, 30, 1];
 const intervalMatch = /(\d+)(m|h)+/g;
+const spacer = { x: 0, y: 0, w: 1, h: 1, static: true };
+
 
 const calculateIntervals = (interval, start, end) => {
   const intervals = (MINUTES / interval) * (end - start);
@@ -39,7 +43,7 @@ export default class Planner extends PureComponent {
     // for now Sunday = 0, Saturday = 6
     days: PropTypes.arrayOf(PropTypes.number).isRequired,
     end: PropTypes.number,
-    interval: PropTypes.oneOf(['1m', '5m', '15m', '30m', '1h']),
+    interval: PropTypes.oneOf(INTERVALS),
     // for now it will be an array of plans
     // the index should correspond to the days to start
     plans: PropTypes.arrayOf(
@@ -72,7 +76,6 @@ export default class Planner extends PureComponent {
     const interval = intervalMatch.exec(props.interval)[1];
     // this will build all time intervals per day, this will get used for future lookups
     const intervals = calculateIntervals(parseInt(interval, 10), props.start, props.end);
-    console.log(intervals);
 
     // construct the lookup table, this will be an array of arrays to fast look up data about
     // the cross section of day and time.  [day][time]
@@ -154,18 +157,18 @@ export default class Planner extends PureComponent {
     const { gDaysOfWeek, gTimes, gPlans } = this.state;
 
     return (
-      <ReactGridLayout
+      <WidthReactGridLayout
         className="layout"
         cols={days.length + 1}
         rowHeight={30}
         verticalCompact={false}
-        width={1200}
         onLayoutChange={this.handleLayoutChange}
       >
+        <div data-grid={spacer} />
         {gTimes.map(time => <div data-grid={time} key={time.time}><Time time={time.time} /></div>)}
         {gDaysOfWeek.map(day => <div data-grid={day} key={day.key}><Day day={day.day} /></div>)}
         {gPlans.map(plan => <div data-grid={plan} key={plan.key} style={{ border: '1px solid #eee' }}><small>{plan.label}</small></div>)}
-      </ReactGridLayout>
+      </WidthReactGridLayout>
     );
   }
 }
