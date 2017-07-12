@@ -14,8 +14,8 @@ import Time from './Time.js';
 const WidthReactGridLayout = WidthProvider(ReactGridLayout);
 
 const MINUTES = 60;
-const validIntervals = [1, 5, 15, 30, 1];
-const intervalMatch = /(\d+)(m|h)+/g;
+const validIntervals = [1, 5, 15, 30, 60];
+const intervalMatch = /(\d+)(m|h)+/;
 const spacer = { x: 0, y: 0, w: 1, h: 1, static: true };
 
 
@@ -34,6 +34,11 @@ const calculateIntervals = (interval, start, end) => {
 
   return times;
 };
+
+const lookupTable = (intervals, days) => days.map(day => intervals.map(time => ({ day: DAYS[day], time })));
+
+const gridTimes = intervals => intervals.map((time, index) => ({ static: true, x: 0, y: index + 1, w: 1, h: 1, time }));
+
 // Add interval, which can be specific to start say, 1, 5, 15, 30, 1hour
 // build matrix of days and times for quick look up when moving and expanding
 // [1,1] = Sunday at 6:00
@@ -73,16 +78,16 @@ export default class Planner extends PureComponent {
     invariant(props.end >= props.start, 'End time cannot be less than or equal to start time');
 
     // get the time interval
-    const interval = intervalMatch.exec(props.interval)[1];
+    const interval = new RegExp(intervalMatch, 'g').exec(props.interval)[1];
     // this will build all time intervals per day, this will get used for future lookups
     const intervals = calculateIntervals(parseInt(interval, 10), props.start, props.end);
 
     // construct the lookup table, this will be an array of arrays to fast look up data about
     // the cross section of day and time.  [day][time]
-    const lookup = props.days.map(day => intervals.map(time => ({ day: DAYS[day], time })));
+    const lookup = lookupTable(intervals, props.days);
 
     // times for the view
-    const gTimes = intervals.map((time, index) => ({ static: true, x: 0, y: index + 1, w: 1, h: 1, time }));
+    const gTimes = gridTimes(intervals);
 
     // days for the view, unfortunately with the way RGL works we need to add this to direct child
     const gDaysOfWeek = props.days.map(day =>
@@ -111,6 +116,27 @@ export default class Planner extends PureComponent {
       gPlans,
       lookup
     };
+  }
+
+  componentWillReceiveProps(nextProps) {
+    if (this.props.interval !== nextProps.interval) {
+      const interval = new RegExp(intervalMatch, 'g').exec(nextProps.interval)[1];
+      // this will build all time intervals per day, this will get used for future lookups
+      const intervals = calculateIntervals(parseInt(interval, 10), nextProps.start, nextProps.end);
+
+      // construct the lookup table, this will be an array of arrays to fast look up data about
+      // the cross section of day and time.  [day][time]
+      const lookup = lookupTable(intervals, nextProps.days);
+
+      // times for the view
+      const gTimes = gridTimes(intervals);
+
+      this.setState({
+        gTimes,
+        intervals,
+        lookup
+      });
+    }
   }
 
   handleLayoutChange = layout => {
