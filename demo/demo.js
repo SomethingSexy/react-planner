@@ -8,12 +8,10 @@ import PropsForm from './PropsForm.js';
 import Planner from '../src/Planner.js';
 
 const plans = [
-  { id: uuid.v4(), day: 0, time: 0, label: 'Fun' },
   { id: uuid.v4(), day: 1, time: 0, label: 'Fun' },
-  { id: uuid.v4(), day: 2, time: 0, label: 'Fun' }
+  { id: uuid.v4(), day: 2, time: 0, label: 'Fun' },
+  { id: uuid.v4(), day: 3, time: 0, label: 'Fun' }
 ];
-
-const days = [0, 1, 2, 3, 4, 5, 6];
 
 class App extends PureComponent {
   constructor(props) {
@@ -35,7 +33,7 @@ class App extends PureComponent {
           <PropsForm config={this.state} onChange={this.handleChange} />
         </Grid>
         <Grid item xs={12}>
-          <Planner days={days} interval={interval} plans={plans} />
+          <Planner days={7} interval={interval} plans={plans} />
         </Grid>
       </Grid>
     );
