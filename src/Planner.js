@@ -1,4 +1,6 @@
+/* global window, document */
 import React, { PureComponent } from 'react';
+import { findDOMNode } from 'react-dom';
 import PropTypes from 'prop-types';
 import ReactGridLayout, { WidthProvider } from 'react-grid-layout';
 import 'react-grid-layout/css/styles.css';
@@ -17,6 +19,32 @@ const validIntervals = [1, 5, 15, 30, 60];
 const intervalMatch = /(\d+)(m|h)+/;
 const spacer = { x: 0, y: 0, w: 1, h: 1, static: true };
 
+let relativeToViewport;
+
+function isRelativeToViewport() {
+  if (relativeToViewport != null) {
+    return relativeToViewport;
+  }
+
+  const x = window.pageXOffset ? window.pageXOffset + window.innerWidth - 1 : 0;
+  const y = window.pageYOffset ? window.pageYOffset + window.innerHeight - 1 : 0;
+  if (!x && !y) {
+    return true;
+  }
+
+  // Test with a point larger than the viewport. If it returns an element,
+  // then that means elementFromPoint takes page coordinates.
+  relativeToViewport = !document.elementFromPoint(x, y);
+  return relativeToViewport;
+}
+
+function elementFromPoint(x, y) {
+  if (!isRelativeToViewport()) {
+    x += window.pageXOffset;
+    y += window.pageYOffset;
+  }
+  return document.elementFromPoint(x, y);
+}
 
 const calculateIntervals = (interval, start, end) => {
   const intervals = (MINUTES / interval) * (end - start);
@@ -108,7 +136,6 @@ export default class Planner extends PureComponent {
         w: 1,
         h: 1,
         label: `${dayTime.day}: ${dayTime.time} - ${toTime.time}`,
-        key: plan.id,
         i: plan.id
       };
     });
@@ -120,8 +147,30 @@ export default class Planner extends PureComponent {
       gTimes,
       gPlans,
       lookup,
-      days
+      days,
+      intervals
     };
+  }
+
+  componentDidMount() {
+    // Get the width and height of a single box at the time
+    // to use that to calculate rough grids
+    const grid = findDOMNode(this.grid).getBoundingClientRect(); // eslint-disable-line react/no-find-dom-node
+    // console.log(window.pageXOffset, window.pageYOffset, window.pageYOffset + grid.top, window.pageXOffset + grid.left);
+    const element = findDOMNode(this.spacer).getBoundingClientRect(); // eslint-disable-line react/no-find-dom-node
+    // grab the width and height to be able to calculate click positions
+    const { width, height } = element;
+
+    this.setState({
+      coordinates: {
+        grid: {
+          left: window.pageXOffset + grid.left,
+          top: window.pageYOffset + grid.top
+        },
+        width: Math.round(width),
+        height: Math.round(height)
+      }
+    });
   }
 
   componentWillReceiveProps(nextProps) {
@@ -145,6 +194,19 @@ export default class Planner extends PureComponent {
     }
   }
 
+  isValidMove(plan) {
+    const { lookup } = this.state;
+    if (typeof lookup[plan.x] === 'undefined') {
+      return false;
+    }
+
+    if (typeof lookup[plan.x][plan.y] === 'undefined') {
+      return false;
+    }
+
+    return true;
+  }
+
   handleLayoutChange = layout => {
     const { gPlans, lookup, planIds } = this.state;
     // grab the plans
@@ -166,7 +228,7 @@ export default class Planner extends PureComponent {
       const updatedgPlans = gPlans.map(plan => {
         const nextPlan = changed.find(c => c.i === plan.i);
 
-        if (nextPlan) {
+        if (nextPlan && this.isValidMove(nextPlan)) {
           const dayTime = lookup[nextPlan.x - 1][nextPlan.y - 1];
           const toTime = lookup[nextPlan.x - 1][(nextPlan.y - 1) + (nextPlan.h - 1) + 1];
           return {
@@ -178,30 +240,45 @@ export default class Planner extends PureComponent {
           };
         }
 
-        return plan;
+        return { ...plan };
       });
       this.setState({ gPlans: updatedgPlans });
+    }
+  }
+
+  handleOnClick = event => {
+    const currentClick = elementFromPoint(event.clientX, event.clientY);
+
+    // use this to some how figure out where to add a new plan
+    if (currentClick.classList.contains('react-grid-layout')) {
+      console.log(event.pageX, event.pageY, this.grid);
     }
   }
 
   render() {
     const { gDaysOfWeek, gTimes, gPlans, days } = this.state;
     return (
-      <WidthReactGridLayout
-        className="layout"
-        cols={days.length + 1}
-        rowHeight={30}
-        verticalCompact={false}
-        onLayoutChange={this.handleLayoutChange}
+      <div // eslint-disable-line jsx-a11y/no-static-element-interactions
+        onClick={this.handleOnClick}
       >
-        <div data-grid={spacer} />
-        {gTimes.map(time =>
-          <div data-grid={time} key={time.i}><Time time={time.time} /></div>)}
-        {gDaysOfWeek.map(day =>
-          <div data-grid={day} key={day.key}><Day day={day.day} /></div>)}
-        {gPlans.map(plan =>
-          <div data-grid={plan} key={plan.key} style={{ border: '1px solid #eee' }}><small>{plan.label}</small></div>)}
-      </WidthReactGridLayout>
+        <WidthReactGridLayout
+          className="layout"
+          cols={days.length + 1}
+          layout={gPlans}
+          ref={ref => { this.grid = ref; }}
+          rowHeight={30}
+          verticalCompact={false}
+          onLayoutChange={this.handleLayoutChange}
+        >
+          <div data-grid={spacer} key="spacer" ref={ref => { this.spacer = ref; }} />
+          {gTimes.map(time =>
+            <div data-grid={time} key={time.i}><Time time={time.time} /></div>)}
+          {gDaysOfWeek.map(day =>
+            <div data-grid={day} key={day.key}><Day day={day.day} /></div>)}
+          {gPlans.map(plan =>
+            <div key={plan.i} style={{ border: '1px solid #eee' }}><small>{plan.label}</small></div>)}
+        </WidthReactGridLayout>
+      </div>
     );
   }
 }
