@@ -255,8 +255,11 @@ export default class Planner extends PureComponent {
       const xWithin = event.pageX - this.state.coordinates.grid.x;
       const yWithin = event.pageY - this.state.coordinates.grid.y;
       // this should give us the rough location of the click within the grid
-      console.log(Math.floor(yWithin / this.state.coordinates.height));
-      console.log(Math.floor(xWithin / this.state.coordinates.width));
+      // adding 10 to account for the transformation margin between grid points
+      const yGrid = Math.floor(yWithin / (this.state.coordinates.height + 10));
+      const xGrid = Math.floor(xWithin / this.state.coordinates.width);
+      console.log(xGrid, yGrid);
+      console.log(this.state.lookup[xGrid - 1][yGrid - 1]);
     }
   }
 
