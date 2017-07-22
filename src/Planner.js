@@ -164,8 +164,8 @@ export default class Planner extends PureComponent {
     this.setState({
       coordinates: {
         grid: {
-          left: window.pageXOffset + grid.left,
-          top: window.pageYOffset + grid.top
+          x: window.pageXOffset + grid.left,
+          y: window.pageYOffset + grid.top
         },
         width: Math.round(width),
         height: Math.round(height)
@@ -251,7 +251,12 @@ export default class Planner extends PureComponent {
 
     // use this to some how figure out where to add a new plan
     if (currentClick.classList.contains('react-grid-layout')) {
-      console.log(event.pageX, event.pageY, this.grid);
+      // where the user clicked, minus the top left corner of the grid
+      const xWithin = event.pageX - this.state.coordinates.grid.x;
+      const yWithin = event.pageY - this.state.coordinates.grid.y;
+      // this should give us the rough location of the click within the grid
+      console.log(Math.floor(yWithin / this.state.coordinates.height));
+      console.log(Math.floor(xWithin / this.state.coordinates.width));
     }
   }
 
