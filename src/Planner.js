@@ -251,15 +251,30 @@ export default class Planner extends PureComponent {
 
     // use this to some how figure out where to add a new plan
     if (currentClick.classList.contains('react-grid-layout')) {
+      const { gPlans, lookup, coordinates, planIds } = this.state;
       // where the user clicked, minus the top left corner of the grid
-      const xWithin = event.pageX - this.state.coordinates.grid.x;
-      const yWithin = event.pageY - this.state.coordinates.grid.y;
+      const xWithin = event.pageX - coordinates.grid.x;
+      const yWithin = event.pageY - coordinates.grid.y;
       // this should give us the rough location of the click within the grid
       // adding 10 to account for the transformation margin between grid points
-      const yGrid = Math.floor(yWithin / (this.state.coordinates.height + 10));
-      const xGrid = Math.floor(xWithin / this.state.coordinates.width);
+      const yGrid = Math.floor(yWithin / (coordinates.height + 10));
+      const xGrid = Math.floor(xWithin / (coordinates.width + 10));
       console.log(xGrid, yGrid);
-      console.log(this.state.lookup[xGrid - 1][yGrid - 1]);
+      console.log(lookup[xGrid - 1][yGrid - 1]);
+      const dayTime = lookup[xGrid - 1][yGrid - 1];
+      const toTime = lookup[xGrid - 1][(yGrid - 1) + 1];
+      const id = uuid.v4();
+      this.setState({
+        gPlans: [...gPlans, {
+          label: `${dayTime.day}: ${dayTime.time} - ${toTime.time}`,
+          x: xGrid,
+          y: yGrid,
+          h: 1,
+          w: 1,
+          i: id
+        }],
+        planIds: [...planIds, id]
+      });
     }
   }
 
@@ -267,7 +282,7 @@ export default class Planner extends PureComponent {
     const { gDaysOfWeek, gTimes, gPlans, days } = this.state;
     return (
       <div // eslint-disable-line jsx-a11y/no-static-element-interactions
-        onClick={this.handleOnClick}
+        onDoubleClick={this.handleOnClick}
       >
         <WidthReactGridLayout
           className="layout"
