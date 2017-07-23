@@ -2,12 +2,13 @@
 import React, { PureComponent } from 'react';
 import { findDOMNode } from 'react-dom';
 import PropTypes from 'prop-types';
-import ReactGridLayout, { WidthProvider } from 'react-grid-layout';
-import 'react-grid-layout/css/styles.css';
-import 'react-resizable/css/styles.css';
 import uuid from 'uuid';
 import moment from 'moment';
 import invariant from 'invariant';
+import ReactGridLayout, { WidthProvider } from 'react-grid-layout';
+import 'react-grid-layout/css/styles.css';
+import 'react-resizable/css/styles.css';
+import Modal from 'react-modal';
 import elementFromPoint from './utils/elementFromPoint.js';
 import { INTERVALS } from './constants.js';
 import Day from './Day.js';
@@ -274,35 +275,48 @@ export default class Planner extends PureComponent {
     }
   }
 
+  handleSelectPlan = id => {
+    console.log(id);
+  }
+
   render() {
     const { gDaysOfWeek, gTimes, gPlans, days } = this.state;
     return (
-      <div // eslint-disable-line jsx-a11y/no-static-element-interactions
-        onDoubleClick={this.handleAddPlan}
-      >
-        <WidthReactGridLayout
-          className="layout"
-          cols={days.length + 1}
-          layout={gPlans}
-          ref={ref => { this.grid = ref; }}
-          rowHeight={30}
-          verticalCompact={false}
-          onLayoutChange={this.handleLayoutChange}
+      <div>
+        <div // eslint-disable-line jsx-a11y/no-static-element-interactions
+          onDoubleClick={this.handleAddPlan}
         >
-          <div data-grid={spacer} key="spacer" ref={ref => { this.spacer = ref; }} />
-          {gTimes.map(time =>
-            <div data-grid={time} key={time.i}><Time time={time.time} /></div>)}
-          {gDaysOfWeek.map(day =>
-            <div data-grid={day} key={day.key}><Day day={day.day} /></div>)}
-          {gPlans.map(plan => (
-            <div key={plan.i} style={{ border: '1px solid #eee' }}>
-              <Plan
-                plan={plan}
-                onRemovePlan={this.handleRemovePlan}
-              />
-            </div>
-          ))}
-        </WidthReactGridLayout>
+          <WidthReactGridLayout
+            className="layout"
+            cols={days.length + 1}
+            layout={gPlans}
+            ref={ref => { this.grid = ref; }}
+            rowHeight={30}
+            verticalCompact={false}
+            onLayoutChange={this.handleLayoutChange}
+          >
+            <div data-grid={spacer} key="spacer" ref={ref => { this.spacer = ref; }} />
+            {gTimes.map(time =>
+              <div data-grid={time} key={time.i}><Time time={time.time} /></div>)}
+            {gDaysOfWeek.map(day =>
+              <div data-grid={day} key={day.key}><Day day={day.day} /></div>)}
+            {gPlans.map(plan => (
+              <div key={plan.i} style={{ border: '1px solid #eee' }}>
+                <Plan
+                  plan={plan}
+                  onRemovePlan={this.handleRemovePlan}
+                  onSelectPlan={this.handleSelectPlan}
+                />
+              </div>
+            ))}
+          </WidthReactGridLayout>
+        </div>
+        <Modal
+          contentLabel="Edit Plan"
+          isOpen
+        >
+          Test
+        </Modal>
       </div>
     );
   }
