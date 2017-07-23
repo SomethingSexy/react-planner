@@ -8,43 +8,18 @@ import 'react-resizable/css/styles.css';
 import uuid from 'uuid';
 import moment from 'moment';
 import invariant from 'invariant';
+import elementFromPoint from './utils/elementFromPoint.js';
 import { INTERVALS } from './constants.js';
 import Day from './Day.js';
 import Time from './Time.js';
+import Plan from './Plan.js';
 
 const WidthReactGridLayout = WidthProvider(ReactGridLayout);
 
 const MINUTES = 60;
-const validIntervals = [1, 5, 15, 30, 60];
+// const validIntervals = [1, 5, 15, 30, 60];
 const intervalMatch = /(\d+)(m|h)+/;
 const spacer = { x: 0, y: 0, w: 1, h: 1, static: true };
-
-let relativeToViewport;
-
-function isRelativeToViewport() {
-  if (relativeToViewport != null) {
-    return relativeToViewport;
-  }
-
-  const x = window.pageXOffset ? window.pageXOffset + window.innerWidth - 1 : 0;
-  const y = window.pageYOffset ? window.pageYOffset + window.innerHeight - 1 : 0;
-  if (!x && !y) {
-    return true;
-  }
-
-  // Test with a point larger than the viewport. If it returns an element,
-  // then that means elementFromPoint takes page coordinates.
-  relativeToViewport = !document.elementFromPoint(x, y);
-  return relativeToViewport;
-}
-
-function elementFromPoint(x, y) {
-  if (!isRelativeToViewport()) {
-    x += window.pageXOffset;
-    y += window.pageYOffset;
-  }
-  return document.elementFromPoint(x, y);
-}
 
 const calculateIntervals = (interval, start, end) => {
   const intervals = (MINUTES / interval) * (end - start);
@@ -161,7 +136,7 @@ export default class Planner extends PureComponent {
     // grab the width and height to be able to calculate click positions
     const { width, height } = element;
 
-    this.setState({
+    this.setState({ // eslint-disable-line react/no-did-mount-set-state
       coordinates: {
         grid: {
           x: window.pageXOffset + grid.left,
@@ -192,6 +167,19 @@ export default class Planner extends PureComponent {
         lookup
       });
     }
+  }
+
+  getGrid(event) {
+    const { coordinates } = this.state;
+    // where the user clicked, minus the top left corner of the grid
+    const xWithin = event.pageX - coordinates.grid.x;
+    const yWithin = event.pageY - coordinates.grid.y;
+    // this should give us the rough location of the click within the grid
+    // adding 10 to account for the transformation margin between grid points
+    const y = Math.floor(yWithin / (coordinates.height + 10));
+    const x = Math.floor(xWithin / (coordinates.width + 10));
+
+    return { x, y };
   }
 
   isValidMove(plan) {
@@ -246,29 +234,21 @@ export default class Planner extends PureComponent {
     }
   }
 
-  handleOnClick = event => {
+  handleAddPlan = event => {
     const currentClick = elementFromPoint(event.clientX, event.clientY);
-
-    // use this to some how figure out where to add a new plan
+    // not a grid item
     if (currentClick.classList.contains('react-grid-layout')) {
-      const { gPlans, lookup, coordinates, planIds } = this.state;
-      // where the user clicked, minus the top left corner of the grid
-      const xWithin = event.pageX - coordinates.grid.x;
-      const yWithin = event.pageY - coordinates.grid.y;
-      // this should give us the rough location of the click within the grid
-      // adding 10 to account for the transformation margin between grid points
-      const yGrid = Math.floor(yWithin / (coordinates.height + 10));
-      const xGrid = Math.floor(xWithin / (coordinates.width + 10));
-      console.log(xGrid, yGrid);
-      console.log(lookup[xGrid - 1][yGrid - 1]);
-      const dayTime = lookup[xGrid - 1][yGrid - 1];
-      const toTime = lookup[xGrid - 1][(yGrid - 1) + 1];
+      const { gPlans, lookup, planIds } = this.state;
+      const { x, y } = this.getGrid(event);
+      const dayTime = lookup[x - 1][y - 1];
+      const toTime = lookup[x - 1][(y - 1) + 1];
       const id = uuid.v4();
+      // TODO: need to formally add this to plans
       this.setState({
         gPlans: [...gPlans, {
           label: `${dayTime.day}: ${dayTime.time} - ${toTime.time}`,
-          x: xGrid,
-          y: yGrid,
+          x,
+          y,
           h: 1,
           w: 1,
           i: id
@@ -278,11 +258,27 @@ export default class Planner extends PureComponent {
     }
   }
 
+  handleRemovePlan = id => {
+    const index = this.state.gPlans.findIndex(plan => plan.i === id);
+    if (index === 0) {
+      this.setState({
+        gPlans: this.state.gPlans.slice(index + 1)
+      });
+    } else {
+      this.setState({
+        gPlans: [
+          ...this.state.gPlans.slice(0, index),
+          ...this.state.gPlans.slice(index + 1)
+        ]
+      });
+    }
+  }
+
   render() {
     const { gDaysOfWeek, gTimes, gPlans, days } = this.state;
     return (
       <div // eslint-disable-line jsx-a11y/no-static-element-interactions
-        onDoubleClick={this.handleOnClick}
+        onDoubleClick={this.handleAddPlan}
       >
         <WidthReactGridLayout
           className="layout"
@@ -298,8 +294,14 @@ export default class Planner extends PureComponent {
             <div data-grid={time} key={time.i}><Time time={time.time} /></div>)}
           {gDaysOfWeek.map(day =>
             <div data-grid={day} key={day.key}><Day day={day.day} /></div>)}
-          {gPlans.map(plan =>
-            <div key={plan.i} style={{ border: '1px solid #eee' }}><small>{plan.label}</small></div>)}
+          {gPlans.map(plan => (
+            <div key={plan.i} style={{ border: '1px solid #eee' }}>
+              <Plan
+                plan={plan}
+                onRemovePlan={this.handleRemovePlan}
+              />
+            </div>
+          ))}
         </WidthReactGridLayout>
       </div>
     );
