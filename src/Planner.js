@@ -147,6 +147,8 @@ export default class Planner extends PureComponent {
         height: Math.round(height)
       }
     });
+
+    document.addEventListener('keydown', this.handleCloseModal);
   }
 
   componentWillReceiveProps(nextProps) {
@@ -168,6 +170,10 @@ export default class Planner extends PureComponent {
         lookup
       });
     }
+  }
+
+  componentWillUnmount() {
+    document.removeEventListener('keydown', this.handleCloseModal);
   }
 
   getGrid(event) {
@@ -194,6 +200,10 @@ export default class Planner extends PureComponent {
     }
 
     return true;
+  }
+
+  handleCloseModal = () => {
+    this.setState({ selectedPlan: null });
   }
 
   handleLayoutChange = layout => {
@@ -276,7 +286,7 @@ export default class Planner extends PureComponent {
   }
 
   handleSelectPlan = id => {
-    console.log(id);
+    this.setState({ selectedPlan: id });
   }
 
   render() {
@@ -313,9 +323,9 @@ export default class Planner extends PureComponent {
         </div>
         <Modal
           contentLabel="Edit Plan"
-          isOpen
+          isOpen={!!this.state.selectedPlan}
         >
-          Test
+          {this.state.selectedPlan}
         </Modal>
       </div>
     );
