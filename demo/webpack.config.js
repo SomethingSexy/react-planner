@@ -6,7 +6,9 @@ const webpack = require('webpack');
 
 const plugins = [
   new HtmlWebpackPlugin({
-    template: './demo/index.ejs'
+    template: './demo/index.ejs',
+    filename: '../../index.html',
+    hash: true
   }),
   new ExtractTextPlugin({
     filename: 'style.css',
@@ -22,8 +24,9 @@ module.exports = {
   ],
   output: {
     path: path.resolve(__dirname, 'public'),
+    filename: 'bundle.js'
     // publicPath: '/public',
-    filename: '[hash].bundle.js'
+    // filename: '[hash].bundle.js'
   },
   resolve: {
     unsafeCache: true,
@@ -52,7 +55,7 @@ module.exports = {
             ['env', {
               targets: {
                 browsers: ['last 2 versions'],
-                node: 7
+                node: 8
               },
               include: []
             }]
