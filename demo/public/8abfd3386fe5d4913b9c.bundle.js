@@ -68389,16 +68389,14 @@ var Planner = function (_PureComponent) {
           height = element.height;
 
 
-      this.setState({ // eslint-disable-line react/no-did-mount-set-state
-        coordinates: {
-          grid: {
-            x: window.pageXOffset + grid.left,
-            y: window.pageYOffset + grid.top
-          },
-          width: Math.round(width),
-          height: Math.round(height)
-        }
-      });
+      this.coordinates = {
+        grid: {
+          x: window.pageXOffset + grid.left,
+          y: window.pageYOffset + grid.top
+        },
+        width: Math.round(width),
+        height: Math.round(height)
+      };
 
       document.addEventListener('keydown', this.handleCloseModal);
     }
@@ -68431,6 +68429,28 @@ var Planner = function (_PureComponent) {
       }
     }
   }, {
+    key: 'componentDidUpdate',
+    value: function componentDidUpdate() {
+      // Get the width and height of a single box at the time
+      // to use that to calculate rough grids
+      var grid = (0, _reactDom.findDOMNode)(this.grid).getBoundingClientRect(); // eslint-disable-line react/no-find-dom-node
+      // console.log(window.pageXOffset, window.pageYOffset, window.pageYOffset + grid.top, window.pageXOffset + grid.left);
+      var element = (0, _reactDom.findDOMNode)(this.spacer).getBoundingClientRect(); // eslint-disable-line react/no-find-dom-node
+      // grab the width and height to be able to calculate click positions
+      var width = element.width,
+          height = element.height;
+
+
+      this.coordinates = {
+        grid: {
+          x: window.pageXOffset + grid.left,
+          y: window.pageYOffset + grid.top
+        },
+        width: Math.round(width),
+        height: Math.round(height)
+      };
+    }
+  }, {
     key: 'componentWillUnmount',
     value: function componentWillUnmount() {
       document.removeEventListener('keydown', this.handleCloseModal);
@@ -68438,9 +68458,8 @@ var Planner = function (_PureComponent) {
   }, {
     key: 'getGrid',
     value: function getGrid(event) {
-      var coordinates = this.state.coordinates;
+      var coordinates = this.coordinates;
       // where the user clicked, minus the top left corner of the grid
-
       var xWithin = event.pageX - coordinates.grid.x;
       var yWithin = event.pageY - coordinates.grid.y;
       // this should give us the rough location of the click within the grid

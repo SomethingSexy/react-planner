@@ -137,16 +137,14 @@ export default class Planner extends PureComponent {
     // grab the width and height to be able to calculate click positions
     const { width, height } = element;
 
-    this.setState({ // eslint-disable-line react/no-did-mount-set-state
-      coordinates: {
-        grid: {
-          x: window.pageXOffset + grid.left,
-          y: window.pageYOffset + grid.top
-        },
-        width: Math.round(width),
-        height: Math.round(height)
-      }
-    });
+    this.coordinates = {
+      grid: {
+        x: window.pageXOffset + grid.left,
+        y: window.pageYOffset + grid.top
+      },
+      width: Math.round(width),
+      height: Math.round(height)
+    };
 
     document.addEventListener('keydown', this.handleCloseModal);
   }
@@ -177,12 +175,31 @@ export default class Planner extends PureComponent {
     }
   }
 
+  componentDidUpdate() {
+    // Get the width and height of a single box at the time
+    // to use that to calculate rough grids
+    const grid = findDOMNode(this.grid).getBoundingClientRect(); // eslint-disable-line react/no-find-dom-node
+    // console.log(window.pageXOffset, window.pageYOffset, window.pageYOffset + grid.top, window.pageXOffset + grid.left);
+    const element = findDOMNode(this.spacer).getBoundingClientRect(); // eslint-disable-line react/no-find-dom-node
+    // grab the width and height to be able to calculate click positions
+    const { width, height } = element;
+
+    this.coordinates = {
+      grid: {
+        x: window.pageXOffset + grid.left,
+        y: window.pageYOffset + grid.top
+      },
+      width: Math.round(width),
+      height: Math.round(height)
+    };
+  }
+
   componentWillUnmount() {
     document.removeEventListener('keydown', this.handleCloseModal);
   }
 
   getGrid(event) {
-    const { coordinates } = this.state;
+    const coordinates = this.coordinates;
     // where the user clicked, minus the top left corner of the grid
     const xWithin = event.pageX - coordinates.grid.x;
     const yWithin = event.pageY - coordinates.grid.y;
