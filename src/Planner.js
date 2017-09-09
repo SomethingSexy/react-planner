@@ -152,19 +152,24 @@ export default class Planner extends PureComponent {
   }
 
   componentWillReceiveProps(nextProps) {
-    if (this.props.interval !== nextProps.interval) {
+    if (this.props.interval !== nextProps.interval || this.props.days !== nextProps.days) {
       const interval = new RegExp(intervalMatch, 'g').exec(nextProps.interval)[1];
       // this will build all time intervals per day, this will get used for future lookups
       const intervals = calculateIntervals(parseInt(interval, 10), nextProps.start, nextProps.end);
 
+      const days = range(nextProps.days);
+      const gDaysOfWeek = days.map(day =>
+        ({ day, x: day, y: 0, w: 1, h: 1, static: true, key: uuid.v4() }));
       // construct the lookup table, this will be an array of arrays to fast look up data about
       // the cross section of day and time.  [day][time]
-      const lookup = lookupTable(intervals, this.state.days);
+      const lookup = lookupTable(intervals, days);
 
       // times for the view
       const gTimes = gridTimes(intervals);
 
       this.setState({
+        days,
+        gDaysOfWeek,
         gTimes,
         intervals,
         lookup
