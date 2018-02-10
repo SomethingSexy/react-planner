@@ -5,8 +5,8 @@ import uuid from 'uuid';
 import { MuiThemeProvider } from 'material-ui/styles';
 import Grid from 'material-ui/Grid';
 import Chip from 'material-ui/Chip';
-import PropsForm from './PropsForm.js';
-import Planner from '../src/Planner.js';
+import PropsForm from './PropsForm.tsx';
+import Planner from '../src/Planner.tsx';
 
 const plans = [
   { id: uuid.v4(), day: 1, time: 0, label: 'Fun' },

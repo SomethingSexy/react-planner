@@ -1,19 +1,19 @@
 /* global window, document */
+import invariant from 'invariant';
+import moment from 'moment';
+import PropTypes from 'prop-types';
 import React, { PureComponent } from 'react';
 import { findDOMNode } from 'react-dom';
-import PropTypes from 'prop-types';
-import uuid from 'uuid';
-import moment from 'moment';
-import invariant from 'invariant';
 import ReactGridLayout, { WidthProvider } from 'react-grid-layout';
-import 'react-grid-layout/css/styles.css';
-import 'react-resizable/css/styles.css';
+import 'react-grid-layout/css/styles.css';  // tslint:disable-line
 import Modal from 'react-modal';
-import elementFromPoint from './utils/elementFromPoint.js';
+import 'react-resizable/css/styles.css';  // tslint:disable-line
+import uuid from 'uuid';
 import { INTERVALS } from './constants.js';
 import Day from './Day.js';
-import Time from './Time.js';
 import Plan from './Plan.js';
+import Time from './Time.js';
+import elementFromPoint from './utils/elementFromPoint.js';
 
 const WidthReactGridLayout = WidthProvider(ReactGridLayout);
 

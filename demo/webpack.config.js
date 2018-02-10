@@ -18,8 +18,7 @@ const plugins = [
 
 module.exports = {
   entry: [
-    'babel-polyfill',
-    './demo/demo.js'
+    './demo/demo.tsx'
   ],
   output: {
     path: path.resolve(__dirname, 'public'),
@@ -39,28 +38,21 @@ module.exports = {
   // devtool: "#inline-source-map",
   module: {
     rules: [{
-      test: /\.js$/,
+      test: /\.ts$/,
       exclude: /node_modules/,
       include: [
         path.resolve(__dirname),
         path.resolve(__dirname, '../src')
       ],
-      use: {
-        loader: 'babel-loader',
-        options: {
-          presets: [
-            'react',
-            ['env', {
-              targets: {
-                browsers: ['last 2 versions'],
-                node: 8
-              },
-              include: []
-            }]
-          ],
-          plugins: ['transform-class-properties', 'transform-object-rest-spread']
-        }
+      enforce: 'pre',
+      loader: 'tslint-loader',
+      options: {
+        typeCheck: true,
+        emitErrors: true
       }
+    }, {
+      test: /\.tsx?$/,
+      loader: 'ts-loader'
     }, {
       test: /\.css$/,
       use: ExtractTextPlugin.extract({
