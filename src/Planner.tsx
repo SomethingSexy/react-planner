@@ -14,7 +14,14 @@ import Plan from './Plan.js';
 import Time from './Time.js';
 import * as Types from './types';
 import elementFromPoint from './utils/elementFromPoint.js';
-import { calculateIntervals, gridTimes, lookupTable, range } from './utils/planner';
+import {
+  calculateIntervals,
+  gridDays,
+  gridPlans,
+  gridTimes,
+  lookupTable,
+  range
+} from './utils/planner';
 
 const WidthReactGridLayout = WidthProvider(ReactGridLayout);
 
@@ -26,18 +33,19 @@ export interface IPlanner {
   days: number;
   end: number;
   interval: string;
-  plans: [{ day: number; id: string; time: number; }];
+  plans: Types.IPlan[];
   start: number;
 }
 
 interface IPlannerState {
   days: number[];
-  gDaysOfWeek: object[];
-  gPlans: object[];
-  gTimes: object[];
+  gDaysOfWeek: Types.IGridDay[];
+  gPlans: Types.IGridPlan[];
+  gTimes: Types.IGridTime[];
   intervals: string[];
   lookup: Types.lookUpTable;
   planIds: string[];
+  selectedPlan: string | null;
 }
 
 // Add interval, which can be specific to start say, 1, 5, 15, 30, 1hour
@@ -75,7 +83,7 @@ export default class Planner extends PureComponent<IPlanner, IPlannerState> {
 
   private grid: any;
   private spacer: any;
-  private coordinates: object;
+  private coordinates: Types.ICoordinates | null = null;
 
   constructor(props: IPlanner) {
     super(props);
@@ -83,8 +91,6 @@ export default class Planner extends PureComponent<IPlanner, IPlannerState> {
     invariant(props.end >= props.start, 'End time cannot be less than or equal to start time');
     invariant(!Number.isNaN(props.days), 'Days must be a number or a date range.');
     invariant(props.days > 0, 'Days must be greater than one.');
-
-    this.coordinates = {};
 
     // get the time interval
     const regInterval = new RegExp(intervalMatch, 'g').exec(props.interval);
@@ -103,22 +109,10 @@ export default class Planner extends PureComponent<IPlanner, IPlannerState> {
     const gTimes = gridTimes(intervals);
 
     // days for the view, unfortunately with the way RGL works we need to add this to direct child
-    const gDaysOfWeek = days.map(day =>
-      ({ day, x: day, y: 0, w: 1, h: 1, static: true, key: uuid.v4() }));
+    const gDaysOfWeek = gridDays(days);
 
     // given the plans, create the data necessary for the view
-    const gPlans = props.plans.map(plan => {
-      const dayTime = lookup[plan.day - 1][plan.time];
-      const toTime = lookup[plan.day - 1][plan.time + 1];
-      return {
-        h: 1,
-        i: plan.id,
-        label: `${dayTime.day}: ${dayTime.time} - ${toTime.time}`,
-        w: 1,
-        x: plan.day,
-        y: plan.time + 1,
-      };
-    });
+    const gPlans = gridPlans(props.plans, lookup);
 
     this.state = {
       days,
@@ -129,6 +123,7 @@ export default class Planner extends PureComponent<IPlanner, IPlannerState> {
       lookup,
       // use for quick lookup
       planIds: props.plans.map(plan => plan.id),
+      selectedPlan: null
     };
   }
 
@@ -205,35 +200,31 @@ export default class Planner extends PureComponent<IPlanner, IPlannerState> {
   }
 
   public render() {
-    const { gDaysOfWeek, gTimes, gPlans, days } = this.state;
+    const { gDaysOfWeek, gPlans, days } = this.state;
+
+    // Setting it up this way because d.ts is not correct for rgl
+    const rglProps: any = {
+      className: 'layout',
+      cols: days.length + 1,
+      layout: gPlans,
+      onLayoutChange: this.handleLayoutChange,
+      ref: (ref: any) => { this.grid = ref; },
+      rowHeight: 30,
+      verticalCompact: false
+    };
+
     return (
       <div>
         <div // eslint-disable-line jsx-a11y/no-static-element-interactions
           onDoubleClick={this.handleAddPlan}
         >
           <WidthReactGridLayout
-            className="layout"
-            cols={days.length + 1}
-            layout={gPlans}
-            ref={ref => { this.grid = ref; }}
-            rowHeight={30}
-            verticalCompact={false}
-            onLayoutChange={this.handleLayoutChange}
+            {...rglProps}
           >
             <div data-grid={spacer} key="spacer" ref={ref => { this.spacer = ref; }} />
-            {gTimes.map(time =>
-              <div data-grid={time} key={time.i}><Time time={time.time} /></div>)}
-            {gDaysOfWeek.map(day =>
-              <div data-grid={day} key={day.key}><Day day={day.day} /></div>)}
-            {gPlans.map(plan => (
-              <div key={plan.i} style={{ border: '1px solid #eee' }}>
-                <Plan
-                  plan={plan}
-                  onRemovePlan={this.handleRemovePlan}
-                  onSelectPlan={this.handleSelectPlan}
-                />
-              </div>
-            ))}
+            {this.renderTimes()}
+            {this.renderDays()}
+            {this.renderPlans()}
           </WidthReactGridLayout>
         </div>
         <Modal
@@ -246,8 +237,39 @@ export default class Planner extends PureComponent<IPlanner, IPlannerState> {
     );
   }
 
+  private renderTimes() {
+    const { gTimes } = this.state;
+    return gTimes.map(
+      time =>
+        <div data-grid={time} key={time.i}><Time time={time.time} /></div>
+    );
+  }
+
+  private renderDays() {
+    const { gDaysOfWeek } = this.state;
+    return gDaysOfWeek.map(day => <div data-grid={day} key={day.key}><Day day={day.day} /></div>);
+  }
+
+  private renderPlans() {
+    const { gPlans } = this.state;
+    return gPlans.map(plan => (
+      <div key={plan.i} style={{ border: '1px solid #eee' }}>
+        <Plan
+          plan={plan}
+          onRemovePlan={this.handleRemovePlan}
+          onSelectPlan={this.handleSelectPlan}
+        />
+      </div>
+    ));
+  }
+
   private getGrid(event: any) {
     const coordinates = this.coordinates;
+
+    if (!coordinates) {
+      return {};
+    }
+
     // where the user clicked, minus the top left corner of the grid
     const xWithin = event.pageX - coordinates.grid.x;
     const yWithin = event.pageY - coordinates.grid.y;
@@ -259,7 +281,7 @@ export default class Planner extends PureComponent<IPlanner, IPlannerState> {
     return { x, y };
   }
 
-  private isValidMove(plan) {
+  private isValidMove(plan: Types.IGridPlan) {
     const { lookup } = this.state;
     if (typeof lookup[plan.x] === 'undefined') {
       return false;
@@ -276,7 +298,7 @@ export default class Planner extends PureComponent<IPlanner, IPlannerState> {
     this.setState({ selectedPlan: null });
   }
 
-  private handleLayoutChange = layout => {
+  private handleLayoutChange = (layout: any) => {
     const { gPlans, lookup, planIds } = this.state;
     // grab the plans
     const nextPlans = layout.filter(item => planIds.indexOf(item.i) !== -1);
@@ -315,7 +337,7 @@ export default class Planner extends PureComponent<IPlanner, IPlannerState> {
     }
   }
 
-  private handleAddPlan = event => {
+  private handleAddPlan = (event: any) => {
     const currentClick = elementFromPoint(event.clientX, event.clientY);
     // not a grid item
     if (currentClick.classList.contains('react-grid-layout')) {
@@ -339,7 +361,7 @@ export default class Planner extends PureComponent<IPlanner, IPlannerState> {
     }
   }
 
-  private handleRemovePlan = id => {
+  private handleRemovePlan = (id: string) => {
     const index = this.state.gPlans.findIndex(plan => plan.i === id);
     if (index === 0) {
       this.setState({
@@ -355,7 +377,7 @@ export default class Planner extends PureComponent<IPlanner, IPlannerState> {
     }
   }
 
-  private handleSelectPlan = id => {
+  private handleSelectPlan = (id: string) => {
     this.setState({ selectedPlan: id });
   }
 }
