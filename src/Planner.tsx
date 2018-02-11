@@ -1,7 +1,7 @@
 /* global window, document */
 import invariant from 'invariant';
 import PropTypes from 'prop-types';
-import React, { PureComponent, ReactInstance } from 'react';
+import React, { PureComponent } from 'react';
 import { findDOMNode } from 'react-dom';
 import ReactGridLayout, { WidthProvider } from 'react-grid-layout';
 import 'react-grid-layout/css/styles.css';  // tslint:disable-line
@@ -31,10 +31,10 @@ const spacer = { x: 0, y: 0, w: 1, h: 1, static: true };
 
 export interface IPlanner {
   days: number;
-  end: number;
+  end?: number;
   interval: string;
   plans: Types.IPlan[];
-  start: number;
+  start?: number;
 }
 
 interface IPlannerState {
@@ -75,7 +75,7 @@ export default class Planner extends PureComponent<IPlanner, IPlannerState> {
     start: PropTypes.number
   };
 
-  public static defaultProps = {
+  public static defaultProps: Partial<IPlanner> = {
     end: 24,
     interval: '5m',
     start: 6
@@ -85,12 +85,12 @@ export default class Planner extends PureComponent<IPlanner, IPlannerState> {
   private spacer: any;
   private coordinates: Types.ICoordinates | null = null;
 
-  constructor(props: IPlanner) {
+  constructor({ days, end = 24, interval = '5m', start = 6 }: IPlanner) {
     super(props);
 
-    invariant(props.end >= props.start, 'End time cannot be less than or equal to start time');
-    invariant(!Number.isNaN(props.days), 'Days must be a number or a date range.');
-    invariant(props.days > 0, 'Days must be greater than one.');
+    invariant(end >= start, 'End time cannot be less than or equal to start time');
+    invariant(!Number.isNaN(days), 'Days must be a number or a date range.');
+    invariant(days > 0, 'Days must be greater than one.');
 
     // get the time interval
     const regInterval = new RegExp(intervalMatch, 'g').exec(props.interval);
@@ -99,23 +99,23 @@ export default class Planner extends PureComponent<IPlanner, IPlannerState> {
     // this will build all time intervals per day, this will get used for future lookups
     const intervals = calculateIntervals(parseInt(interval, 10), props.start, props.end);
 
-    const days = range(props.days);
+    const rangeDays = range(days);
 
     // construct the lookup table, this will be an array of arrays to fast look up data about
     // the cross section of day and time.  [day][time]
-    const lookup = lookupTable(intervals, days);
+    const lookup = lookupTable(intervals, rangeDays);
 
     // times for the view
     const gTimes = gridTimes(intervals);
 
     // days for the view, unfortunately with the way RGL works we need to add this to direct child
-    const gDaysOfWeek = gridDays(days);
+    const gDaysOfWeek = gridDays(rangeDays);
 
     // given the plans, create the data necessary for the view
     const gPlans = gridPlans(props.plans, lookup);
 
     this.state = {
-      days,
+      days: rangeDays,
       gDaysOfWeek,
       gPlans,
       gTimes,
@@ -151,7 +151,8 @@ export default class Planner extends PureComponent<IPlanner, IPlannerState> {
 
   public componentWillReceiveProps(nextProps: IPlanner) {
     if (this.props.interval !== nextProps.interval || this.props.days !== nextProps.days) {
-      const interval = new RegExp(intervalMatch, 'g').exec(nextProps.interval)[1];
+      const regInterval = new RegExp(intervalMatch, 'g').exec(nextProps.interval);
+      const interval = regInterval ? regInterval[1] : '5';
       // this will build all time intervals per day, this will get used for future lookups
       const intervals = calculateIntervals(parseInt(interval, 10), nextProps.start, nextProps.end);
 
@@ -200,7 +201,7 @@ export default class Planner extends PureComponent<IPlanner, IPlannerState> {
   }
 
   public render() {
-    const { gDaysOfWeek, gPlans, days } = this.state;
+    const { gPlans, days } = this.state;
 
     // Setting it up this way because d.ts is not correct for rgl
     const rglProps: any = {
@@ -263,11 +264,12 @@ export default class Planner extends PureComponent<IPlanner, IPlannerState> {
     ));
   }
 
-  private getGrid(event: any) {
+  private getGrid(event: any): { x: number; y: number} {
     const coordinates = this.coordinates;
 
     if (!coordinates) {
-      return {};
+      // TODO: figure out what this should be
+      return { x: 0, y: 0 };
     }
 
     // where the user clicked, minus the top left corner of the grid
@@ -301,14 +303,14 @@ export default class Planner extends PureComponent<IPlanner, IPlannerState> {
   private handleLayoutChange = (layout: any) => {
     const { gPlans, lookup, planIds } = this.state;
     // grab the plans
-    const nextPlans = layout.filter(item => planIds.indexOf(item.i) !== -1);
+    const nextPlans = layout.filter((item: any) => planIds.indexOf(item.i) !== -1);
 
     // compare the next plans with the currently visible plans, saving off any
     // that we know of changed
-    const changed = nextPlans.filter(nextPlan => {
+    const changed = nextPlans.filter((nextPlan: any) => {
       const plan = gPlans.find(gPlan => gPlan.i === nextPlan.i);
       // start with moving
-      if (plan.x !== nextPlan.x || plan.y !== nextPlan.y || plan.h !== nextPlan.h) {
+      if (plan && (plan.x !== nextPlan.x || plan.y !== nextPlan.y || plan.h !== nextPlan.h)) {
         return true;
       }
       return false;
@@ -317,17 +319,16 @@ export default class Planner extends PureComponent<IPlanner, IPlannerState> {
     // if something has changed, then lets update the grid plans
     if (changed.length) {
       const updatedgPlans = gPlans.map(plan => {
-        const nextPlan = changed.find(c => c.i === plan.i);
-
+        const nextPlan = changed.find((c: { i: string}) => c.i === plan.i);
         if (nextPlan && this.isValidMove(nextPlan)) {
           const dayTime = lookup[nextPlan.x - 1][nextPlan.y - 1];
           const toTime = lookup[nextPlan.x - 1][(nextPlan.y - 1) + (nextPlan.h - 1) + 1];
           return {
             ...plan,
+            h: nextPlan.h,
             label: `${dayTime.day}: ${dayTime.time} - ${toTime.time}`,
             x: nextPlan.x,
             y: nextPlan.y,
-            h: nextPlan.h
           };
         }
 
@@ -348,14 +349,16 @@ export default class Planner extends PureComponent<IPlanner, IPlannerState> {
       const id = uuid.v4();
       // TODO: need to formally add this to plans
       this.setState({
-        gPlans: [...gPlans, {
-          label: `${dayTime.day}: ${dayTime.time} - ${toTime.time}`,
-          x,
-          y,
-          h: 1,
-          w: 1,
-          i: id
-        }],
+        gPlans: [
+          ...gPlans, {
+            x,
+            y,
+            h: 1,
+            i: id,
+            label: `${dayTime.day}: ${dayTime.time} - ${toTime.time}`,
+            w: 1
+          }
+        ],
         planIds: [...planIds, id]
       });
     }
