@@ -1,6 +1,6 @@
 {
   "name": "react-planner",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "private": true,
   "description": "",
   "main": "modules/index.js",
@@ -9,7 +9,7 @@
     "build:demo": "rimraf demo/public&&webpack --config ./demo/webpack.config.js",
     "postversion": "git push && git push --tags",
     "test": "echo \"Error: no test specified\" && exit 1",
-    "version": "npm run build && git add -A public/releases"
+    "version": "npm run build && git add -A modules"
   },
   "repository": {
     "type": "git",
