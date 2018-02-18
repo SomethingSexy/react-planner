@@ -6,7 +6,6 @@
   "main": "modules/index.js",
   "scripts": {
     "build": "tsc --outDir ./modules",
-    "build:demo": "rimraf demo/public&&webpack --config ./demo/webpack.config.js",
     "postversion": "git push && git push --tags",
     "test": "echo \"Error: no test specified\" && exit 1",
     "version": "npm run build && git add -A modules"

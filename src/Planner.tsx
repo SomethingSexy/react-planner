@@ -37,7 +37,7 @@ export interface IPlanner {
   start?: number;
 }
 
-interface IPlannerState {
+export interface IPlannerState {
   days: number[];
   gDaysOfWeek: Types.IGridDay[];
   gPlans: Types.IGridPlan[];
