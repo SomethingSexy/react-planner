@@ -4,6 +4,7 @@
   "private": true,
   "description": "",
   "main": "modules/index.js",
+  "typings" : "modules/index.d.ts",
   "scripts": {
     "build": "tsc --outDir ./modules",
     "postversion": "git push && git push --tags",
