@@ -1,10 +1,10 @@
 {
   "name": "react-planner",
-  "version": "0.0.7",
+  "version": "0.0.8",
   "private": true,
   "description": "",
   "main": "modules/index.js",
-  "typings" : "modules/index.d.ts",
+  "typings": "modules/index.d.ts",
   "scripts": {
     "build": "tsc --outDir ./modules",
     "postversion": "git push && git push --tags",
