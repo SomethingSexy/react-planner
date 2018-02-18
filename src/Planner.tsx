@@ -85,19 +85,20 @@ export default class Planner extends PureComponent<IPlanner, IPlannerState> {
   private spacer: any;
   private coordinates: Types.ICoordinates | null = null;
 
-  constructor({ days, end = 24, interval = '5m', start = 6 }: IPlanner) {
+  constructor(props: IPlanner) {
     super(props);
+    const { days, end = 24, interval = '5m', start = 6 } = props;
 
     invariant(end >= start, 'End time cannot be less than or equal to start time');
     invariant(!Number.isNaN(days), 'Days must be a number or a date range.');
     invariant(days > 0, 'Days must be greater than one.');
 
     // get the time interval
-    const regInterval = new RegExp(intervalMatch, 'g').exec(props.interval);
-    const interval = regInterval ? regInterval[1] : '5';
+    const regInterval = new RegExp(intervalMatch, 'g').exec(interval);
+    const rawInterval = regInterval ? regInterval[1] : '5';
 
     // this will build all time intervals per day, this will get used for future lookups
-    const intervals = calculateIntervals(parseInt(interval, 10), props.start, props.end);
+    const intervals = calculateIntervals(parseInt(rawInterval, 10), start, end);
 
     const rangeDays = range(days);
 
@@ -115,12 +116,12 @@ export default class Planner extends PureComponent<IPlanner, IPlannerState> {
     const gPlans = gridPlans(props.plans, lookup);
 
     this.state = {
-      days: rangeDays,
       gDaysOfWeek,
       gPlans,
       gTimes,
       intervals,
       lookup,
+      days: rangeDays,
       // use for quick lookup
       planIds: props.plans.map(plan => plan.id),
       selectedPlan: null
@@ -154,7 +155,9 @@ export default class Planner extends PureComponent<IPlanner, IPlannerState> {
       const regInterval = new RegExp(intervalMatch, 'g').exec(nextProps.interval);
       const interval = regInterval ? regInterval[1] : '5';
       // this will build all time intervals per day, this will get used for future lookups
-      const intervals = calculateIntervals(parseInt(interval, 10), nextProps.start, nextProps.end);
+      const intervals = calculateIntervals(
+        parseInt(interval, 10), nextProps.start || 6, nextProps.end || 24
+      );
 
       const days = range(nextProps.days);
       const gDaysOfWeek = days.map(day =>
