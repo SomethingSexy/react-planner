@@ -26,8 +26,6 @@
   },
   "homepage": "https://github.com/SomethingSexy/react-planner#readme",
   "dependencies": {
-    "compression-webpack-plugin": "^1.1.6",
-    "extract-text-webpack-plugin": "^3.0.2",
     "invariant": "^2.2.2",
     "moment": "^2.18.1",
     "prop-types": "^15.5.10",
@@ -35,20 +33,16 @@
     "react-dom": "^16.2.0",
     "react-grid-layout": "^0.16.3",
     "react-modal": "^3.1.13",
-    "save-dev": "^2.0.0",
     "uuid": "^3.2.1"
   },
   "devDependencies": {
     "@types/invariant": "^2.2.29",
-    "@types/material-ui": "^0.20.5",
     "@types/prop-types": "^15.5.2",
     "@types/react": "^16.0.34",
     "@types/react-dom": "^16.0.3",
     "@types/react-grid-layout": "^0.16.3",
     "@types/react-modal": "^3.1.1",
     "@types/uuid": "^3.4.3",
-    "html-webpack-plugin": "^2.30.1",
-    "material-ui": "next",
     "ts-loader": "^3.2.0",
     "tslint": "^5.9.1",
     "tslint-config-airbnb": "^5.4.2",
@@ -56,7 +50,6 @@
     "tslint-eslint-rules": "^4.1.1",
     "tslint-loader": "^3.5.3",
     "tslint-react": "^3.4.0",
-    "typescript": "^2.6.2",
-    "webpack": "^3.10.0"
+    "typescript": "^2.6.2"
   }
 }

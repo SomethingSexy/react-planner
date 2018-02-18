@@ -16,5 +16,5 @@
     "experimentalDecorators": true,
     "rootDir": "./src"
   },
-  "exclude": ["node_modules", "demo", "modules"]
+  "exclude": ["node_modules", "modules"]
 }
