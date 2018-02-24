@@ -30,6 +30,8 @@ export const gridPlans = (plans, lookup) => plans.map(plan => {
         w: 1,
         x: plan.day,
         y: plan.time + 1,
+        minW: 1,
+        maxW: 1
     };
 });
 //# sourceMappingURL=planner.js.map

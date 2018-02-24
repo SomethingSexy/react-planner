@@ -43,5 +43,7 @@ export const gridPlans = (plans: Types.IPlan[], lookup: Types.lookUpTable): Type
       w: 1,
       x: plan.day,
       y: plan.time + 1,
+      minW: 1,
+      maxW: 1
     };
   });
