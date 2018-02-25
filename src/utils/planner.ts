@@ -1,8 +1,10 @@
-import moment from 'moment';
+import * as moment from 'moment';
 import uuid from 'uuid';
 import * as Types from '../types';
 
 const MINUTES = 60;
+// TODO: worry about locale here
+const validDates = ['MM-DD-YYYY', 'YYYY-MM-DD'];
 
 export const calculateIntervals = (interval: number, start: number, end: number): string[] => {
   const intervals = (MINUTES / interval) * (end - start);
@@ -47,3 +49,34 @@ export const gridPlans = (plans: Types.IPlan[], lookup: Types.lookUpTable): Type
       maxW: 1
     };
   });
+
+/**
+ * Given a set of plans, return the range of dates within those plans.
+ * @param plans
+ */
+export const rangeDays = (plans: Types.IPlan[]) => {
+  const dates = plans
+    .map(plan => plan.date)
+    .sort((left, right) => {
+      // this assumes correct dates for now
+      return moment(left, validDates)
+        .diff(moment(right, validDates));
+    });
+
+  // given the sort dates, grab the first and last
+  if (dates.length < 2) {
+    throw Error('Invalid plans.');
+  }
+
+  const first = moment(dates[0], validDates);
+  const last = moment(dates[dates.length - 1], validDates);
+
+  const difference = last.diff(first, 'days');
+
+  const balls = [first.format('MM/DD/YYYY')];
+  for (let i = 0; i < difference; i += 1) {
+    balls.push(first.add(1, 'days').format('MM/DD/YYYY'));
+  }
+
+  return balls;
+};

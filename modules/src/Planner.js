@@ -1,6 +1,5 @@
 /* global window, document */
 import invariant from 'invariant';
-import * as moment from 'moment';
 import PropTypes from 'prop-types';
 import React, { PureComponent } from 'react';
 import { findDOMNode } from 'react-dom';
@@ -110,14 +109,10 @@ export default class Planner extends PureComponent {
         // they want to plan for but no actual dates have been set.  If there is a date range
         // then that is the first/last.  If none are passed in then we can extract them from
         // the plans.
-        invariant(plans.length || days || (dateStart && dateEnd), 'Plans, days, or start dates are required.');
+        invariant(!plans.length && !days && !dateStart && !dateEnd, 'Plans, days, or start dates are required.');
         if (days) {
             invariant(!Number.isNaN(days), 'Days must be a number or a date range.');
             invariant(days > 0, 'Days must be greater than one.');
-        }
-        if (dateStart && dateEnd) {
-            invariant(moment(dateStart, 'MM-DD-YYYY', true).isValid, 'Start date must be valid.');
-            invariant(moment(dateEnd, 'MM-DD-YYYY', true).isValid, 'End date must be valid.');
         }
         invariant(end >= start, 'End time cannot be less than or equal to start time');
         // get the time interval

@@ -1,5 +1,6 @@
 /* global window, document */
 import invariant from 'invariant';
+import * as moment from 'moment';
 import PropTypes from 'prop-types';
 import React, { PureComponent } from 'react';
 import { findDOMNode } from 'react-dom';
@@ -10,6 +11,7 @@ import 'react-resizable/css/styles.css';  // tslint:disable-line
 import uuid from 'uuid';
 import { INTERVALS } from './constants.js';
 import Day from './Day.js';
+import EditPlan from './EditPlan.js';
 import Plan from './Plan.js';
 import Time from './Time.js';
 import * as Types from './types';
@@ -30,7 +32,9 @@ const intervalMatch = /(\d+)(m|h)+/;
 const spacer = { x: 0, y: 0, w: 1, h: 1, static: true };
 
 export interface IPlanner {
-  days: number;
+  dateEnd?: string;
+  dateStart?: string;
+  days?: number;
   end?: number;
   interval: string;
   plans: Types.IPlan[];
@@ -45,7 +49,7 @@ export interface IPlannerState {
   intervals: string[];
   lookup: Types.lookUpTable;
   planIds: string[];
-  selectedPlan: string | null;
+  selectedPlan: Types.IPlan | null;
 }
 
 // Add interval, which can be specific to start say, 1, 5, 15, 30, 1hour
@@ -55,6 +59,8 @@ export interface IPlannerState {
 export default class Planner extends PureComponent<IPlanner, IPlannerState> {
   public static propTypes = {
     // for now Sunday = 0, Saturday = 6
+    dateStart: PropTypes.string,
+    dateEnd: PropTypes.string,
     days: PropTypes.oneOfType([PropTypes.number]).isRequired,
     end: PropTypes.number,
     interval: PropTypes.oneOf(INTERVALS),
@@ -63,7 +69,7 @@ export default class Planner extends PureComponent<IPlanner, IPlannerState> {
     plans: PropTypes.arrayOf(
       PropTypes.shape({
         // for now this needs to corresponds to days, 0 - 6
-        day: PropTypes.number,
+        date: PropTypes.number,
         // should be optional at some point
         id: PropTypes.string,
         label: PropTypes.string,
@@ -78,6 +84,7 @@ export default class Planner extends PureComponent<IPlanner, IPlannerState> {
   public static defaultProps: Partial<IPlanner> = {
     end: 24,
     interval: '5m',
+    plans: [],
     start: 6
   };
 
@@ -87,11 +94,37 @@ export default class Planner extends PureComponent<IPlanner, IPlannerState> {
 
   constructor(props: IPlanner) {
     super(props);
-    const { days, end = 24, interval = '5m', start = 6 } = props;
+    const {
+      days,
+      end = 24,
+      interval = '5m',
+      start = 6,
+      plans = [],
+      dateStart,
+      dateEnd
+    } = props;
+
+    // Days or dates can be passed, in the case of days, they just enter in the days
+    // they want to plan for but no actual dates have been set.  If there is a date range
+    // then that is the first/last.  If none are passed in then we can extract them from
+    // the plans.
+
+    invariant(
+      plans.length || days || (dateStart && dateEnd),
+      'Plans, days, or start dates are required.'
+    );
+
+    if (days) {
+      invariant(!Number.isNaN(days), 'Days must be a number or a date range.');
+      invariant(days > 0, 'Days must be greater than one.');
+    }
+
+    if (dateStart && dateEnd) {
+      invariant(moment(dateStart, 'MM-DD-YYYY', true).isValid, 'Start date must be valid.');
+      invariant(moment(dateEnd, 'MM-DD-YYYY', true).isValid, 'End date must be valid.');
+    }
 
     invariant(end >= start, 'End time cannot be less than or equal to start time');
-    invariant(!Number.isNaN(days), 'Days must be a number or a date range.');
-    invariant(days > 0, 'Days must be greater than one.');
 
     // get the time interval
     const regInterval = new RegExp(intervalMatch, 'g').exec(interval);
@@ -100,7 +133,8 @@ export default class Planner extends PureComponent<IPlanner, IPlannerState> {
     // this will build all time intervals per day, this will get used for future lookups
     const intervals = calculateIntervals(parseInt(rawInterval, 10), start, end);
 
-    const rangeDays = range(days);
+    // TODO on default here
+    const rangeDays = range(days || 6);
 
     // construct the lookup table, this will be an array of arrays to fast look up data about
     // the cross section of day and time.  [day][time]
@@ -159,7 +193,7 @@ export default class Planner extends PureComponent<IPlanner, IPlannerState> {
         parseInt(interval, 10), nextProps.start || 6, nextProps.end || 24
       );
 
-      const days = range(nextProps.days);
+      const days = range(nextProps.days || 6);
       const gDaysOfWeek = days.map(day =>
         ({ day, x: day, y: 0, w: 1, h: 1, static: true, key: uuid.v4() }));
       // construct the lookup table, this will be an array of arrays to fast look up data about
@@ -204,7 +238,7 @@ export default class Planner extends PureComponent<IPlanner, IPlannerState> {
   }
 
   public render() {
-    const { gPlans, days } = this.state;
+    const { gPlans, days, selectedPlan } = this.state;
 
     // Setting it up this way because d.ts is not correct for rgl
     const rglProps: any = {
@@ -214,7 +248,7 @@ export default class Planner extends PureComponent<IPlanner, IPlannerState> {
       onLayoutChange: this.handleLayoutChange,
       ref: (ref: any) => { this.grid = ref; },
       rowHeight: 30,
-      verticalCompact: false
+      compactType: null
     };
 
     return (
@@ -233,9 +267,9 @@ export default class Planner extends PureComponent<IPlanner, IPlannerState> {
         </div>
         <Modal
           contentLabel="Edit Plan"
-          isOpen={!!this.state.selectedPlan}
+          isOpen={!!selectedPlan}
         >
-          {this.state.selectedPlan}
+         {selectedPlan && <EditPlan plan={selectedPlan} />}
         </Modal>
       </div>
     );
@@ -384,6 +418,8 @@ export default class Planner extends PureComponent<IPlanner, IPlannerState> {
   }
 
   private handleSelectPlan = (id: string) => {
-    this.setState({ selectedPlan: id });
+    const { plans } = this.props;
+    const selectedPlan = plans.find(plan => plan.id === id);
+    this.setState({ selectedPlan: selectedPlan || null });
   }
 }

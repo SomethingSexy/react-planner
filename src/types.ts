@@ -2,7 +2,10 @@
 export type lookUpTable = { day: string; time: string; }[][];
 
 export interface IPlan {
-  day: number; id: string; time: number;
+  date: string; // valid date
+  day: number;
+  id: string;
+  time: number;
 }
 
 export interface ICoordinates {

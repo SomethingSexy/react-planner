@@ -14,7 +14,8 @@
       "jsx-boolean-value": "never",
       "variable-name": [true, "ban-keywords", "check-format", "allow-leading-underscore", "allow-pascal-case"],
       "array-type": [true, "array"],
-      "object-literal-sort-keys": [true, "ignore-case", "match-declaration-order"]
+      "object-literal-sort-keys": [true, "ignore-case", "match-declaration-order"],
+      "no-implicit-dependencies": [true, "dev"]
     },
     "rulesDirectory": []
 }
