@@ -5,7 +5,9 @@ import 'react-grid-layout/css/styles.css';
 import 'react-resizable/css/styles.css';
 import * as Types from './types';
 export interface IPlanner {
-    days: number;
+    dateEnd?: string;
+    dateStart?: string;
+    days?: number;
     end?: number;
     interval: string;
     plans: Types.IPlan[];
@@ -19,10 +21,12 @@ export interface IPlannerState {
     intervals: string[];
     lookup: Types.lookUpTable;
     planIds: string[];
-    selectedPlan: string | null;
+    selectedPlan: Types.IPlan | null;
 }
 export default class Planner extends PureComponent<IPlanner, IPlannerState> {
     static propTypes: {
+        dateStart: PropTypes.Requireable<any>;
+        dateEnd: PropTypes.Requireable<any>;
         days: PropTypes.Validator<any>;
         end: PropTypes.Requireable<any>;
         interval: PropTypes.Requireable<any>;

@@ -1,9 +1,13 @@
-
-export type lookUpTable = { day: string; time: string; }[][];
+export interface ILookup {
+  byDate: { [key: string]: number };
+  grid: {
+    day: string;
+    time: string;
+  }[][];
+}
 
 export interface IPlan {
   date: string; // valid date
-  day: number;
   id: string;
   time: number;
 }
@@ -25,7 +29,7 @@ export interface IGridTime {
 }
 
 export interface IGridDay {
-  day: number;
+  day: string;
   x: number;
   y: number;
   w: number;

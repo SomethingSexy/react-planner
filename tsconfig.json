@@ -14,6 +14,7 @@
     "allowJs": true,
     "jsx": "react",
     "experimentalDecorators": true,
+    // "declaration": true
     // "rootDir": "./src"
   },
   "exclude": ["node_modules", "modules", "test"]

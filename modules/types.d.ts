@@ -3,6 +3,7 @@ export declare type lookUpTable = {
     time: string;
 }[][];
 export interface IPlan {
+    date: string;
     day: number;
     id: string;
     time: number;

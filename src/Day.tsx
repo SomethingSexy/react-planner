@@ -1,7 +1,7 @@
 import PropTypes from 'prop-types';
 import React, { StatelessComponent } from 'react';
 
-export interface IDay { day: number; }
+export interface IDay { day: string; }
 
 const Day: StatelessComponent<IDay> = ({ day }) => {
   const label = `Day ${day}`;
@@ -9,7 +9,7 @@ const Day: StatelessComponent<IDay> = ({ day }) => {
 };
 
 Day.propTypes = {
-  day: PropTypes.number
+  day: PropTypes.string
 };
 
 export default Day;

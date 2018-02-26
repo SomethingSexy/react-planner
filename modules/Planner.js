@@ -15,7 +15,7 @@ import EditPlan from './EditPlan.js';
 import Plan from './Plan.js';
 import Time from './Time.js';
 import elementFromPoint from './utils/elementFromPoint.js';
-import { calculateIntervals, gridDays, gridPlans, gridTimes, lookupTable, range } from './utils/planner';
+import { calculateIntervals, gridDays, gridPlans, gridTimes, lookupTable, range, rangeDates } from './utils/planner';
 const WidthReactGridLayout = WidthProvider(ReactGridLayout);
 // const validIntervals = [1, 5, 15, 30, 60];
 const intervalMatch = /(\d+)(m|h)+/;
@@ -125,10 +125,20 @@ export default class Planner extends PureComponent {
         const rawInterval = regInterval ? regInterval[1] : '5';
         // this will build all time intervals per day, this will get used for future lookups
         const intervals = calculateIntervals(parseInt(rawInterval, 10), start, end);
-        // TODO on default here
-        const rangeDays = range(days || 6);
+        let rangeDays = [];
+        if (plans.length) {
+            const dates = rangeDates(plans);
+            rangeDays = range(dates.length);
+        }
+        else if (days) {
+            rangeDays = range(days);
+        }
+        else {
+            // assume start/end dates
+        }
         // construct the lookup table, this will be an array of arrays to fast look up data about
         // the cross section of day and time.  [day][time]
+        // TODO: We need this to be keyed by index so it can easily work with the grid
         const lookup = lookupTable(intervals, rangeDays);
         // times for the view
         const gTimes = gridTimes(intervals);

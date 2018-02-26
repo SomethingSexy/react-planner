@@ -18,8 +18,22 @@ export const calculateIntervals = (interval, start, end) => {
     }
     return times;
 };
+/**
+ * Creates a lookup table for dates to times.
+ * @param intervals - all available time intervals
+ * @param days - range of dates
+ */
 export const lookupTable = (intervals, days) => days.map(day => intervals.map(time => ({ time, day: `Day ${day}` })));
+/**
+ * Creates a lookup table for converting range into grid indexes.
+ * @param range
+ */
+export const lookupByDates = (days) => days.reduce((ret, day, index) => (Object.assign({}, ret, { [day]: index })), {});
 export const gridTimes = (intervals) => intervals.map((time, index) => ({ time, static: true, x: 0, y: index + 1, w: 1, h: 1, i: uuid.v4() }));
+/**
+ * Returns a filled array of numbers (as a string type) given the total.
+ * @param total
+ */
 export const range = (total) => Array.from(Array(total)).map((_noop, i) => i + 1);
 export const gridDays = (days) => days.map(day => ({ day, x: day, y: 0, w: 1, h: 1, static: true, key: uuid.v4() }));
 export const gridPlans = (plans, lookup) => plans.map(plan => {
@@ -40,7 +54,7 @@ export const gridPlans = (plans, lookup) => plans.map(plan => {
  * Given a set of plans, return the range of dates within those plans.
  * @param plans
  */
-export const rangeDays = (plans) => {
+export const rangeDates = (plans) => {
     const dates = plans
         .map(plan => plan.date)
         .sort((left, right) => {
@@ -55,10 +69,10 @@ export const rangeDays = (plans) => {
     const first = moment(dates[0], validDates);
     const last = moment(dates[dates.length - 1], validDates);
     const difference = last.diff(first, 'days');
-    const balls = [first.format('MM/DD/YYYY')];
+    const filledDates = [first.format('MM/DD/YYYY')];
     for (let i = 0; i < difference; i += 1) {
-        balls.push(first.add(1, 'days').format('MM/DD/YYYY'));
+        filledDates.push(first.add(1, 'days').format('MM/DD/YYYY'));
     }
-    return balls;
+    return filledDates;
 };
 //# sourceMappingURL=planner.js.map

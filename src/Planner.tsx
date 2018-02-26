@@ -18,11 +18,11 @@ import * as Types from './types';
 import elementFromPoint from './utils/elementFromPoint.js';
 import {
   calculateIntervals,
+  createLookupTables,
   gridDays,
   gridPlans,
   gridTimes,
-  lookupTable,
-  range
+  range,
 } from './utils/planner';
 
 const WidthReactGridLayout = WidthProvider(ReactGridLayout);
@@ -33,7 +33,7 @@ const spacer = { x: 0, y: 0, w: 1, h: 1, static: true };
 
 export interface IPlanner {
   dateEnd?: string;
-  dateStart?: string;
+  dateStart: string;
   days?: number;
   end?: number;
   interval: string;
@@ -42,12 +42,12 @@ export interface IPlanner {
 }
 
 export interface IPlannerState {
-  days: number[];
+  days: string[];
   gDaysOfWeek: Types.IGridDay[];
   gPlans: Types.IGridPlan[];
   gTimes: Types.IGridTime[];
   intervals: string[];
-  lookup: Types.lookUpTable;
+  lookup: Types.ILookup;
   planIds: string[];
   selectedPlan: Types.IPlan | null;
 }
@@ -104,23 +104,22 @@ export default class Planner extends PureComponent<IPlanner, IPlannerState> {
       dateEnd
     } = props;
 
-    // Days or dates can be passed, in the case of days, they just enter in the days
-    // they want to plan for but no actual dates have been set.  If there is a date range
-    // then that is the first/last.  If none are passed in then we can extract them from
-    // the plans.
+    // TODO: Update this so the dateState is required but endDate can be optional or
+    // dervied from days.  Plans will only have dates.
 
     invariant(
-      plans.length || days || (dateStart && dateEnd),
-      'Plans, days, or start dates are required.'
+      days || dateEnd,
+      'Days, or end date is required.'
     );
+
+    invariant(moment(dateStart, 'MM-DD-YYYY', true).isValid, 'Start date must be valid.');
 
     if (days) {
       invariant(!Number.isNaN(days), 'Days must be a number or a date range.');
       invariant(days > 0, 'Days must be greater than one.');
     }
 
-    if (dateStart && dateEnd) {
-      invariant(moment(dateStart, 'MM-DD-YYYY', true).isValid, 'Start date must be valid.');
+    if (dateEnd) {
       invariant(moment(dateEnd, 'MM-DD-YYYY', true).isValid, 'End date must be valid.');
     }
 
@@ -129,16 +128,13 @@ export default class Planner extends PureComponent<IPlanner, IPlannerState> {
     // get the time interval
     const regInterval = new RegExp(intervalMatch, 'g').exec(interval);
     const rawInterval = regInterval ? regInterval[1] : '5';
-
     // this will build all time intervals per day, this will get used for future lookups
     const intervals = calculateIntervals(parseInt(rawInterval, 10), start, end);
 
-    // TODO on default here
-    const rangeDays = range(days || 6);
+    const rangeDays = range(dateStart, dateEnd || days);
 
-    // construct the lookup table, this will be an array of arrays to fast look up data about
-    // the cross section of day and time.  [day][time]
-    const lookup = lookupTable(intervals, rangeDays);
+    // construt lookup table, used to communicate between incoming data and rgl
+    const lookup = createLookupTables(intervals, rangeDays);
 
     // times for the view
     const gTimes = gridTimes(intervals);
@@ -185,7 +181,11 @@ export default class Planner extends PureComponent<IPlanner, IPlannerState> {
   }
 
   public componentWillReceiveProps(nextProps: IPlanner) {
-    if (this.props.interval !== nextProps.interval || this.props.days !== nextProps.days) {
+    if (this.props.interval !== nextProps.interval
+      || this.props.days !== nextProps.days
+      || this.props.dateStart !== nextProps.dateStart
+      || this.props.dateEnd !== nextProps.dateEnd
+    ) {
       const regInterval = new RegExp(intervalMatch, 'g').exec(nextProps.interval);
       const interval = regInterval ? regInterval[1] : '5';
       // this will build all time intervals per day, this will get used for future lookups
@@ -193,12 +193,11 @@ export default class Planner extends PureComponent<IPlanner, IPlannerState> {
         parseInt(interval, 10), nextProps.start || 6, nextProps.end || 24
       );
 
-      const days = range(nextProps.days || 6);
-      const gDaysOfWeek = days.map(day =>
-        ({ day, x: day, y: 0, w: 1, h: 1, static: true, key: uuid.v4() }));
+      const days = range(nextProps.dateStart, nextProps.dateEnd || nextProps.days);
+      const gDaysOfWeek = gridDays(days);
       // construct the lookup table, this will be an array of arrays to fast look up data about
       // the cross section of day and time.  [day][time]
-      const lookup = lookupTable(intervals, days);
+      const lookup = createLookupTables(intervals, days);
 
       // times for the view
       const gTimes = gridTimes(intervals);
@@ -285,7 +284,9 @@ export default class Planner extends PureComponent<IPlanner, IPlannerState> {
 
   private renderDays() {
     const { gDaysOfWeek } = this.state;
-    return gDaysOfWeek.map(day => <div data-grid={day} key={day.key}><Day day={day.day} /></div>);
+    return gDaysOfWeek.map(day =>
+      <div data-grid={day} key={day.key}><Day day={day.day} /></div>
+    );
   }
 
   private renderPlans() {
