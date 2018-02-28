@@ -42,6 +42,8 @@ export interface IGridPlan {
   h: number;
   i: string;
   label: string;
+  minW: number;
+  maxW: number;
   w: number;
   x: number;
   y: number;

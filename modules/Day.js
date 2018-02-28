@@ -6,7 +6,7 @@ const Day = ({ day }) => {
         React.createElement("strong", null, label));
 };
 Day.propTypes = {
-    day: PropTypes.number
+    day: PropTypes.string
 };
 export default Day;
 //# sourceMappingURL=Day.js.map

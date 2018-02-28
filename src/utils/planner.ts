@@ -42,11 +42,11 @@ export const gridTimes = (intervals: string[]): Types.IGridTime[] =>
  * Returns a filled array of numbers (as a string type) given the total.
  * @param total
  */
-export const range = (startDate: string, endDate: string | number): string[] => {
+export const range = (startDate: string, endDate: string | number | undefined): string[] => {
   const start = moment(startDate, validDates);
   const end = typeof endDate === 'string'
     ? moment(endDate, validDates)
-    : moment(startDate, validDates).add(endDate);
+    : moment(startDate, validDates).add(endDate, 'days');
 
   const difference = end.diff(start, 'days');
 
@@ -59,7 +59,7 @@ export const range = (startDate: string, endDate: string | number): string[] => 
 };
 
 export const gridDays = (days: string[]): Types.IGridDay[] =>
-  days.map((day, index) => ({ day, x: index, y: 0, w: 1, h: 1, static: true, key: uuid.v4() }));
+  days.map((day, index) => ({ day, x: index + 1, y: 0, w: 1, h: 1, static: true, key: uuid.v4() }));
 
 export const gridPlans = (plans: Types.IPlan[], lookup: Types.ILookup): Types.IGridPlan[] =>
   plans.map(plan => {

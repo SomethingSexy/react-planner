@@ -15,7 +15,7 @@ import EditPlan from './EditPlan.js';
 import Plan from './Plan.js';
 import Time from './Time.js';
 import elementFromPoint from './utils/elementFromPoint.js';
-import { calculateIntervals, gridDays, gridPlans, gridTimes, lookupTable, range, rangeDates } from './utils/planner';
+import { calculateIntervals, createLookupTables, gridDays, gridPlans, gridTimes, range, } from './utils/planner';
 const WidthReactGridLayout = WidthProvider(ReactGridLayout);
 // const validIntervals = [1, 5, 15, 30, 60];
 const intervalMatch = /(\d+)(m|h)+/;
@@ -50,8 +50,8 @@ export default class Planner extends PureComponent {
                 const updatedgPlans = gPlans.map(plan => {
                     const nextPlan = changed.find((c) => c.i === plan.i);
                     if (nextPlan && this.isValidMove(nextPlan)) {
-                        const dayTime = lookup[nextPlan.x - 1][nextPlan.y - 1];
-                        const toTime = lookup[nextPlan.x - 1][(nextPlan.y - 1) + (nextPlan.h - 1) + 1];
+                        const dayTime = lookup.grid[nextPlan.x - 1][nextPlan.y - 1];
+                        const toTime = lookup.grid[nextPlan.x - 1][(nextPlan.y - 1) + (nextPlan.h - 1) + 1];
                         return Object.assign({}, plan, { h: nextPlan.h, label: `${dayTime.day}: ${dayTime.time} - ${toTime.time}`, x: nextPlan.x, y: nextPlan.y });
                     }
                     return Object.assign({}, plan);
@@ -65,8 +65,8 @@ export default class Planner extends PureComponent {
             if (currentClick.classList.contains('react-grid-layout')) {
                 const { gPlans, lookup, planIds } = this.state;
                 const { x, y } = this.getGrid(event);
-                const dayTime = lookup[x - 1][y - 1];
-                const toTime = lookup[x - 1][(y - 1) + 1];
+                const dayTime = lookup.grid[x - 1][y - 1];
+                const toTime = lookup.grid[x - 1][(y - 1) + 1];
                 const id = uuid.v4();
                 // TODO: need to formally add this to plans
                 this.setState({
@@ -77,7 +77,9 @@ export default class Planner extends PureComponent {
                             h: 1,
                             i: id,
                             label: `${dayTime.day}: ${dayTime.time} - ${toTime.time}`,
-                            w: 1
+                            minW: 1,
+                            maxW: 1,
+                            w: 1,
                         }
                     ],
                     planIds: [...planIds, id]
@@ -105,19 +107,19 @@ export default class Planner extends PureComponent {
             const selectedPlan = plans.find(plan => plan.id === id);
             this.setState({ selectedPlan: selectedPlan || null });
         };
-        const { days, end = 24, interval = '5m', start = 6, plans = [], dateStart, dateEnd } = props;
-        // Days or dates can be passed, in the case of days, they just enter in the days
-        // they want to plan for but no actual dates have been set.  If there is a date range
-        // then that is the first/last.  If none are passed in then we can extract them from
-        // the plans.
-        invariant(plans.length || days || (dateStart && dateEnd), 'Plans, days, or start dates are required.');
+        const { days, end = 24, interval = '5m', start = 6, 
+        // plans = [],
+        dateStart, dateEnd } = props;
+        // TODO: Update this so the dateState is required but endDate can be optional or
+        // dervied from days.  Plans will only have dates.
+        invariant(days || dateEnd, 'Days, or end date is required.');
+        invariant(moment(dateStart, 'MM-DD-YYYY').isValid(), 'Start date must be valid.');
         if (days) {
             invariant(!Number.isNaN(days), 'Days must be a number or a date range.');
             invariant(days > 0, 'Days must be greater than one.');
         }
-        if (dateStart && dateEnd) {
-            invariant(moment(dateStart, 'MM-DD-YYYY', true).isValid, 'Start date must be valid.');
-            invariant(moment(dateEnd, 'MM-DD-YYYY', true).isValid, 'End date must be valid.');
+        if (dateEnd) {
+            invariant(moment(dateEnd, 'MM-DD-YYYY').isValid(), 'End date must be valid.');
         }
         invariant(end >= start, 'End time cannot be less than or equal to start time');
         // get the time interval
@@ -125,21 +127,9 @@ export default class Planner extends PureComponent {
         const rawInterval = regInterval ? regInterval[1] : '5';
         // this will build all time intervals per day, this will get used for future lookups
         const intervals = calculateIntervals(parseInt(rawInterval, 10), start, end);
-        let rangeDays = [];
-        if (plans.length) {
-            const dates = rangeDates(plans);
-            rangeDays = range(dates.length);
-        }
-        else if (days) {
-            rangeDays = range(days);
-        }
-        else {
-            // assume start/end dates
-        }
-        // construct the lookup table, this will be an array of arrays to fast look up data about
-        // the cross section of day and time.  [day][time]
-        // TODO: We need this to be keyed by index so it can easily work with the grid
-        const lookup = lookupTable(intervals, rangeDays);
+        const rangeDays = range(dateStart, dateEnd || days);
+        // construt lookup table, used to communicate between incoming data and rgl
+        const lookup = createLookupTables(rangeDays, intervals);
         // times for the view
         const gTimes = gridTimes(intervals);
         // days for the view, unfortunately with the way RGL works we need to add this to direct child
@@ -178,16 +168,19 @@ export default class Planner extends PureComponent {
         document.addEventListener('keydown', this.handleCloseModal);
     }
     componentWillReceiveProps(nextProps) {
-        if (this.props.interval !== nextProps.interval || this.props.days !== nextProps.days) {
+        if (this.props.interval !== nextProps.interval
+            || this.props.days !== nextProps.days
+            || this.props.dateStart !== nextProps.dateStart
+            || this.props.dateEnd !== nextProps.dateEnd) {
             const regInterval = new RegExp(intervalMatch, 'g').exec(nextProps.interval);
             const interval = regInterval ? regInterval[1] : '5';
             // this will build all time intervals per day, this will get used for future lookups
             const intervals = calculateIntervals(parseInt(interval, 10), nextProps.start || 6, nextProps.end || 24);
-            const days = range(nextProps.days || 6);
-            const gDaysOfWeek = days.map(day => ({ day, x: day, y: 0, w: 1, h: 1, static: true, key: uuid.v4() }));
+            const days = range(nextProps.dateStart, nextProps.dateEnd || nextProps.days);
+            const gDaysOfWeek = gridDays(days);
             // construct the lookup table, this will be an array of arrays to fast look up data about
             // the cross section of day and time.  [day][time]
-            const lookup = lookupTable(intervals, days);
+            const lookup = createLookupTables(days, intervals);
             // times for the view
             const gTimes = gridTimes(intervals);
             this.setState({
@@ -273,10 +266,10 @@ export default class Planner extends PureComponent {
     }
     isValidMove(plan) {
         const { lookup } = this.state;
-        if (typeof lookup[plan.x] === 'undefined') {
+        if (typeof lookup.grid[plan.x] === 'undefined') {
             return false;
         }
-        if (typeof lookup[plan.x][plan.y] === 'undefined') {
+        if (typeof lookup.grid[plan.x][plan.y] === 'undefined') {
             return false;
         }
         return true;
@@ -293,7 +286,7 @@ Planner.propTypes = {
     // the index should correspond to the days to start
     plans: PropTypes.arrayOf(PropTypes.shape({
         // for now this needs to corresponds to days, 0 - 6
-        date: PropTypes.number,
+        date: PropTypes.string,
         // should be optional at some point
         id: PropTypes.string,
         label: PropTypes.string,

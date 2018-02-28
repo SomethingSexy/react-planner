@@ -69,7 +69,7 @@ export default class Planner extends PureComponent<IPlanner, IPlannerState> {
     plans: PropTypes.arrayOf(
       PropTypes.shape({
         // for now this needs to corresponds to days, 0 - 6
-        date: PropTypes.number,
+        date: PropTypes.string,
         // should be optional at some point
         id: PropTypes.string,
         label: PropTypes.string,
@@ -99,7 +99,7 @@ export default class Planner extends PureComponent<IPlanner, IPlannerState> {
       end = 24,
       interval = '5m',
       start = 6,
-      plans = [],
+      // plans = [],
       dateStart,
       dateEnd
     } = props;
@@ -112,7 +112,7 @@ export default class Planner extends PureComponent<IPlanner, IPlannerState> {
       'Days, or end date is required.'
     );
 
-    invariant(moment(dateStart, 'MM-DD-YYYY', true).isValid, 'Start date must be valid.');
+    invariant(moment(dateStart, 'MM-DD-YYYY').isValid(), 'Start date must be valid.');
 
     if (days) {
       invariant(!Number.isNaN(days), 'Days must be a number or a date range.');
@@ -120,7 +120,7 @@ export default class Planner extends PureComponent<IPlanner, IPlannerState> {
     }
 
     if (dateEnd) {
-      invariant(moment(dateEnd, 'MM-DD-YYYY', true).isValid, 'End date must be valid.');
+      invariant(moment(dateEnd, 'MM-DD-YYYY').isValid(), 'End date must be valid.');
     }
 
     invariant(end >= start, 'End time cannot be less than or equal to start time');
@@ -134,7 +134,7 @@ export default class Planner extends PureComponent<IPlanner, IPlannerState> {
     const rangeDays = range(dateStart, dateEnd || days);
 
     // construt lookup table, used to communicate between incoming data and rgl
-    const lookup = createLookupTables(intervals, rangeDays);
+    const lookup = createLookupTables(rangeDays, intervals);
 
     // times for the view
     const gTimes = gridTimes(intervals);
@@ -197,7 +197,7 @@ export default class Planner extends PureComponent<IPlanner, IPlannerState> {
       const gDaysOfWeek = gridDays(days);
       // construct the lookup table, this will be an array of arrays to fast look up data about
       // the cross section of day and time.  [day][time]
-      const lookup = createLookupTables(intervals, days);
+      const lookup = createLookupTables(days, intervals);
 
       // times for the view
       const gTimes = gridTimes(intervals);
@@ -323,11 +323,11 @@ export default class Planner extends PureComponent<IPlanner, IPlannerState> {
 
   private isValidMove(plan: Types.IGridPlan) {
     const { lookup } = this.state;
-    if (typeof lookup[plan.x] === 'undefined') {
+    if (typeof lookup.grid[plan.x] === 'undefined') {
       return false;
     }
 
-    if (typeof lookup[plan.x][plan.y] === 'undefined') {
+    if (typeof lookup.grid[plan.x][plan.y] === 'undefined') {
       return false;
     }
 
@@ -359,8 +359,8 @@ export default class Planner extends PureComponent<IPlanner, IPlannerState> {
       const updatedgPlans = gPlans.map(plan => {
         const nextPlan = changed.find((c: { i: string}) => c.i === plan.i);
         if (nextPlan && this.isValidMove(nextPlan)) {
-          const dayTime = lookup[nextPlan.x - 1][nextPlan.y - 1];
-          const toTime = lookup[nextPlan.x - 1][(nextPlan.y - 1) + (nextPlan.h - 1) + 1];
+          const dayTime = lookup.grid[nextPlan.x - 1][nextPlan.y - 1];
+          const toTime = lookup.grid[nextPlan.x - 1][(nextPlan.y - 1) + (nextPlan.h - 1) + 1];
           return {
             ...plan,
             h: nextPlan.h,
@@ -382,8 +382,8 @@ export default class Planner extends PureComponent<IPlanner, IPlannerState> {
     if (currentClick.classList.contains('react-grid-layout')) {
       const { gPlans, lookup, planIds } = this.state;
       const { x, y } = this.getGrid(event);
-      const dayTime = lookup[x - 1][y - 1];
-      const toTime = lookup[x - 1][(y - 1) + 1];
+      const dayTime = lookup.grid[x - 1][y - 1];
+      const toTime = lookup.grid[x - 1][(y - 1) + 1];
       const id = uuid.v4();
       // TODO: need to formally add this to plans
       this.setState({
@@ -394,7 +394,9 @@ export default class Planner extends PureComponent<IPlanner, IPlannerState> {
             h: 1,
             i: id,
             label: `${dayTime.day}: ${dayTime.time} - ${toTime.time}`,
-            w: 1
+            minW: 1,
+            maxW: 1,
+            w: 1,
           }
         ],
         planIds: [...planIds, id]

@@ -21,6 +21,23 @@ describe('utils - planner', () => {
         '02/10/2018'
       ]);
     });
+
+    it('should return a valid range of dates with a start and days', () => {
+      const output = range('02/01/2018', 9);
+
+      expect(output).to.deep.equal([
+        '02/01/2018',
+        '02/02/2018',
+        '02/03/2018',
+        '02/04/2018',
+        '02/05/2018',
+        '02/06/2018',
+        '02/07/2018',
+        '02/08/2018',
+        '02/09/2018',
+        '02/10/2018'
+      ]);
+    });
   });
 
   describe('createLookupTables', () => {
