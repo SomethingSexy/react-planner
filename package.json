@@ -3,8 +3,8 @@
   "version": "0.0.10",
   "private": true,
   "description": "",
-  "main": "modules/index.js",
-  "typings": "index.d.ts",
+  "main": "./modules/index.js",
+  "typings": "./index.d.ts",
   "scripts": {
     "build": "tsc --outDir ./modules",
     "postversion": "git push && git push --tags",
