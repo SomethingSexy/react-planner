@@ -1,3 +1,3 @@
-import Planner from './Planner';
-export default Planner;
+import P from './Planner';
+export const Planner = P;
 //# sourceMappingURL=index.js.map

@@ -37,6 +37,7 @@ export interface IPlanner {
   days?: number;
   end?: number;
   interval: string;
+  onUpdatePlans: (plans: Types.IPlan[]) => {};
   plans: Types.IPlan[];
   start?: number;
 }
@@ -78,7 +79,8 @@ export default class Planner extends PureComponent<IPlanner, IPlannerState> {
         time: PropTypes.number
       })
     ),
-    start: PropTypes.number
+    start: PropTypes.number,
+    onUpdatePlans: PropTypes.func
   };
 
   public static defaultProps: Partial<IPlanner> = {
@@ -185,6 +187,7 @@ export default class Planner extends PureComponent<IPlanner, IPlannerState> {
       || this.props.days !== nextProps.days
       || this.props.dateStart !== nextProps.dateStart
       || this.props.dateEnd !== nextProps.dateEnd
+      || this.props.plans.length !== nextProps.plans.length
     ) {
       const regInterval = new RegExp(intervalMatch, 'g').exec(nextProps.interval);
       const interval = regInterval ? regInterval[1] : '5';
@@ -202,12 +205,16 @@ export default class Planner extends PureComponent<IPlanner, IPlannerState> {
       // times for the view
       const gTimes = gridTimes(intervals);
 
+      // given the plans, create the data necessary for the view
+      const gPlans = gridPlans(nextProps.plans, lookup);
+
       this.setState({
         days,
         gDaysOfWeek,
         gTimes,
         intervals,
-        lookup
+        lookup,
+        gPlans
       });
     }
   }
@@ -380,27 +387,13 @@ export default class Planner extends PureComponent<IPlanner, IPlannerState> {
     const currentClick = elementFromPoint(event.clientX, event.clientY);
     // not a grid item
     if (currentClick.classList.contains('react-grid-layout')) {
-      const { gPlans, lookup, planIds } = this.state;
+      const { lookup } = this.state;
+      const { onUpdatePlans, plans } = this.props;
       const { x, y } = this.getGrid(event);
       const dayTime = lookup.grid[x - 1][y - 1];
-      const toTime = lookup.grid[x - 1][(y - 1) + 1];
       const id = uuid.v4();
-      // TODO: need to formally add this to plans
-      this.setState({
-        gPlans: [
-          ...gPlans, {
-            x,
-            y,
-            h: 1,
-            i: id,
-            label: `${dayTime.day}: ${dayTime.time} - ${toTime.time}`,
-            minW: 1,
-            maxW: 1,
-            w: 1,
-          }
-        ],
-        planIds: [...planIds, id]
-      });
+
+      onUpdatePlans([...plans, { id, date: dayTime.day, time: y }]);
     }
   }
 

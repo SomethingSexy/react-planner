@@ -1,3 +1,3 @@
-import Planner from './Planner';
+import P from './Planner';
 
-export default Planner;
+export const Planner = P;
