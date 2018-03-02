@@ -26,7 +26,7 @@ export const calculateIntervals = (interval, start, end) => {
 export const createLookupTables = (days, intervals) => {
     return {
         byDate: days.reduce((ret, day, index) => (Object.assign({}, ret, { [day]: index })), {}),
-        grid: days.map(day => intervals.map(time => ({ time, day: `Day ${day}` })))
+        grid: days.map(day => intervals.map(time => ({ time, day })))
     };
 };
 export const gridTimes = (intervals) => intervals.map((time, index) => ({ time, static: true, x: 0, y: index + 1, w: 1, h: 1, i: uuid.v4() }));
@@ -50,13 +50,13 @@ export const gridDays = (days) => days.map((day, index) => ({ day, x: index + 1,
 export const gridPlans = (plans, lookup) => plans.map(plan => {
     const dateIndex = lookup.byDate[plan.date];
     const dayTime = lookup.grid[dateIndex][plan.time];
-    const toTime = lookup.grid[dateIndex][plan.time + 1];
+    const toTime = lookup.grid[dateIndex][plan.toTime];
     return {
-        h: 1,
+        h: plan.toTime,
         i: plan.id,
         label: `${dayTime.day}: ${dayTime.time} - ${toTime.time}`,
         w: 1,
-        x: dateIndex,
+        x: dateIndex + 1,
         y: plan.time + 1,
         minW: 1,
         maxW: 1

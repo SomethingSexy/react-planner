@@ -23,14 +23,14 @@ export const calculateIntervals = (interval: number, start: number, end: number)
 };
 
 /**
- * 
+ *
  * @param days
  * @param intervals
  */
 export const createLookupTables = (days: string[], intervals: string[]): Types.ILookup  => {
   return {
     byDate: days.reduce((ret, day, index) => ({ ...ret, [day]: index }), {}),
-    grid: days.map(day => intervals.map(time => ({ time, day: `Day ${day}` })))
+    grid: days.map(day => intervals.map(time => ({ time, day })))
   };
 };
 
@@ -65,13 +65,13 @@ export const gridPlans = (plans: Types.IPlan[], lookup: Types.ILookup): Types.IG
   plans.map(plan => {
     const dateIndex = lookup.byDate[plan.date];
     const dayTime = lookup.grid[dateIndex][plan.time];
-    const toTime = lookup.grid[dateIndex][plan.time + 1];
+    const toTime = lookup.grid[dateIndex][plan.toTime];
     return {
-      h: 1,
+      h: plan.toTime,
       i: plan.id,
       label: `${dayTime.day}: ${dayTime.time} - ${toTime.time}`,
       w: 1,
-      x: dateIndex,
+      x: dateIndex + 1,
       y: plan.time + 1,
       minW: 1,
       maxW: 1

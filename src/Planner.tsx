@@ -187,7 +187,7 @@ export default class Planner extends PureComponent<IPlanner, IPlannerState> {
       || this.props.days !== nextProps.days
       || this.props.dateStart !== nextProps.dateStart
       || this.props.dateEnd !== nextProps.dateEnd
-      || this.props.plans.length !== nextProps.plans.length
+      || this.props.plans !== nextProps.plans
     ) {
       const regInterval = new RegExp(intervalMatch, 'g').exec(nextProps.interval);
       const interval = regInterval ? regInterval[1] : '5';
@@ -214,7 +214,8 @@ export default class Planner extends PureComponent<IPlanner, IPlannerState> {
         gTimes,
         intervals,
         lookup,
-        gPlans
+        gPlans,
+        planIds: nextProps.plans.map(plan => plan.id)
       });
     }
   }
@@ -347,6 +348,7 @@ export default class Planner extends PureComponent<IPlanner, IPlannerState> {
 
   private handleLayoutChange = (layout: any) => {
     const { gPlans, lookup, planIds } = this.state;
+    const { plans, onUpdatePlans } = this.props;
     // grab the plans
     const nextPlans = layout.filter((item: any) => planIds.indexOf(item.i) !== -1);
 
@@ -363,23 +365,22 @@ export default class Planner extends PureComponent<IPlanner, IPlannerState> {
 
     // if something has changed, then lets update the grid plans
     if (changed.length) {
-      const updatedgPlans = gPlans.map(plan => {
-        const nextPlan = changed.find((c: { i: string}) => c.i === plan.i);
+      const updatedPlans = plans.map(plan => {
+        const nextPlan = changed.find((c: { i: string}) => c.i === plan.id);
         if (nextPlan && this.isValidMove(nextPlan)) {
-          const dayTime = lookup.grid[nextPlan.x - 1][nextPlan.y - 1];
-          const toTime = lookup.grid[nextPlan.x - 1][(nextPlan.y - 1) + (nextPlan.h - 1) + 1];
+          // const dayTime = lookup.grid[nextPlan.x - 1][nextPlan.y - 1];
+          // const toTime = lookup.grid[nextPlan.x - 1][(nextPlan.y - 1) + (nextPlan.h - 1) + 1];
           return {
             ...plan,
-            h: nextPlan.h,
-            label: `${dayTime.day}: ${dayTime.time} - ${toTime.time}`,
-            x: nextPlan.x,
-            y: nextPlan.y,
+            date: lookup.grid[nextPlan.x - 1][nextPlan.y - 1].day,
+            time: nextPlan.y - 1,
+            toTime: nextPlan.h
           };
         }
 
-        return { ...plan };
+        return plan;
       });
-      this.setState({ gPlans: updatedgPlans });
+      onUpdatePlans(updatedPlans);
     }
   }
 
@@ -393,24 +394,25 @@ export default class Planner extends PureComponent<IPlanner, IPlannerState> {
       const dayTime = lookup.grid[x - 1][y - 1];
       const id = uuid.v4();
 
-      onUpdatePlans([...plans, { id, date: dayTime.day, time: y }]);
+      // TODO: toTime here is not working
+      onUpdatePlans([...plans, { id, date: dayTime.day, time: y - 1, toTime: y }]);
     }
   }
 
   private handleRemovePlan = (id: string) => {
-    const index = this.state.gPlans.findIndex(plan => plan.i === id);
+    const { plans, onUpdatePlans } = this.props;
+    const index = plans.findIndex(plan => plan.id === id);
+    let updatedPlans;
     if (index === 0) {
-      this.setState({
-        gPlans: this.state.gPlans.slice(index + 1)
-      });
+      updatedPlans = plans.slice(index + 1);
     } else {
-      this.setState({
-        gPlans: [
-          ...this.state.gPlans.slice(0, index),
-          ...this.state.gPlans.slice(index + 1)
-        ]
-      });
+      updatedPlans = [
+        ...plans.slice(0, index),
+        ...plans.slice(index + 1)
+      ];
     }
+
+    onUpdatePlans(updatedPlans);
   }
 
   private handleSelectPlan = (id: string) => {

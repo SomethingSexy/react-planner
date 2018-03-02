@@ -10,6 +10,7 @@ export interface IPlan {
   date: string; // valid date
   id: string;
   time: number;
+  toTime: number;
 }
 
 export interface ICoordinates {
