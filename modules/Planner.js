@@ -1,8 +1,9 @@
 /* global window, document */
 import invariant from 'invariant';
+import { isEqual } from 'lodash';
 import * as moment from 'moment';
 import PropTypes from 'prop-types';
-import React, { PureComponent } from 'react';
+import React, { Component } from 'react';
 import { findDOMNode } from 'react-dom';
 import ReactGridLayout, { WidthProvider } from 'react-grid-layout';
 import 'react-grid-layout/css/styles.css'; // tslint:disable-line
@@ -24,7 +25,7 @@ const spacer = { x: 0, y: 0, w: 1, h: 1, static: true };
 // build matrix of days and times for quick look up when moving and expanding
 // [1,1] = Sunday at 6:00
 // [1,2] = Sunday at 6:05
-export default class Planner extends PureComponent {
+export default class Planner extends Component {
     constructor(props) {
         super(props);
         this.coordinates = null;
@@ -32,6 +33,7 @@ export default class Planner extends PureComponent {
             this.setState({ selectedPlan: null });
         };
         this.handleLayoutChange = (layout) => {
+            console.log('layout change'); // tslint:disable-line
             const { gPlans, lookup, planIds } = this.state;
             const { plans, onUpdatePlans } = this.props;
             // grab the plans
@@ -53,27 +55,11 @@ export default class Planner extends PureComponent {
                     if (nextPlan && this.isValidMove(nextPlan)) {
                         // const dayTime = lookup.grid[nextPlan.x - 1][nextPlan.y - 1];
                         // const toTime = lookup.grid[nextPlan.x - 1][(nextPlan.y - 1) + (nextPlan.h - 1) + 1];
-                        return Object.assign({}, plan, { date: lookup.grid[nextPlan.x - 1][nextPlan.y - 1].day, time: nextPlan.y - 1, toTime: nextPlan.h });
+                        return Object.assign({}, plan, { date: lookup.grid[nextPlan.x - 1][nextPlan.y - 1].day, time: nextPlan.y - 1, toTime: (nextPlan.y - 1) + (nextPlan.h - 1) + 1 });
                     }
                     return plan;
                 });
                 onUpdatePlans(updatedPlans);
-                // const updatedgPlans = gPlans.map(plan => {
-                //   const nextPlan = changed.find((c: { i: string}) => c.i === plan.i);
-                //   if (nextPlan && this.isValidMove(nextPlan)) {
-                //     const dayTime = lookup.grid[nextPlan.x - 1][nextPlan.y - 1];
-                //     const toTime = lookup.grid[nextPlan.x - 1][(nextPlan.y - 1) + (nextPlan.h - 1) + 1];
-                //     return {
-                //       ...plan,
-                //       h: nextPlan.h,
-                //       label: `${dayTime.day}: ${dayTime.time} - ${toTime.time}`,
-                //       x: nextPlan.x,
-                //       y: nextPlan.y,
-                //     };
-                //   }
-                //   return { ...plan };
-                // });
-                // this.setState({ gPlans: updatedgPlans });
             }
         };
         this.handleAddPlan = (event) => {
@@ -85,6 +71,8 @@ export default class Planner extends PureComponent {
                 const { x, y } = this.getGrid(event);
                 const dayTime = lookup.grid[x - 1][y - 1];
                 const id = uuid.v4();
+                // TODO: toTime here is not working, using y here but when we process it we are
+                // using that for height so it is getting borked
                 onUpdatePlans([...plans, { id, date: dayTime.day, time: y - 1, toTime: y }]);
             }
         };
@@ -168,35 +156,39 @@ export default class Planner extends PureComponent {
         };
         document.addEventListener('keydown', this.handleCloseModal);
     }
-    componentWillReceiveProps(nextProps) {
+    shouldComponentUpdate(nextProps) {
         if (this.props.interval !== nextProps.interval
             || this.props.days !== nextProps.days
             || this.props.dateStart !== nextProps.dateStart
             || this.props.dateEnd !== nextProps.dateEnd
-            || this.props.plans !== nextProps.plans) {
-            const regInterval = new RegExp(intervalMatch, 'g').exec(nextProps.interval);
-            const interval = regInterval ? regInterval[1] : '5';
-            // this will build all time intervals per day, this will get used for future lookups
-            const intervals = calculateIntervals(parseInt(interval, 10), nextProps.start || 6, nextProps.end || 24);
-            const days = range(nextProps.dateStart, nextProps.dateEnd || nextProps.days);
-            const gDaysOfWeek = gridDays(days);
-            // construct the lookup table, this will be an array of arrays to fast look up data about
-            // the cross section of day and time.  [day][time]
-            const lookup = createLookupTables(days, intervals);
-            // times for the view
-            const gTimes = gridTimes(intervals);
-            // given the plans, create the data necessary for the view
-            const gPlans = gridPlans(nextProps.plans, lookup);
-            this.setState({
-                days,
-                gDaysOfWeek,
-                gTimes,
-                intervals,
-                lookup,
-                gPlans,
-                planIds: nextProps.plans.map(plan => plan.id)
-            });
+            || !isEqual(this.props.plans, nextProps.plans)) {
+            return true;
         }
+        return false;
+    }
+    componentWillReceiveProps(nextProps) {
+        const regInterval = new RegExp(intervalMatch, 'g').exec(nextProps.interval);
+        const interval = regInterval ? regInterval[1] : '5';
+        // this will build all time intervals per day, this will get used for future lookups
+        const intervals = calculateIntervals(parseInt(interval, 10), nextProps.start || 6, nextProps.end || 24);
+        const days = range(nextProps.dateStart, nextProps.dateEnd || nextProps.days);
+        const gDaysOfWeek = gridDays(days);
+        // construct the lookup table, this will be an array of arrays to fast look up data about
+        // the cross section of day and time.  [day][time]
+        const lookup = createLookupTables(days, intervals);
+        // times for the view
+        const gTimes = gridTimes(intervals);
+        // given the plans, create the data necessary for the view
+        const gPlans = gridPlans(nextProps.plans, lookup);
+        this.setState({
+            days,
+            gDaysOfWeek,
+            gTimes,
+            intervals,
+            lookup,
+            gPlans,
+            planIds: nextProps.plans.map(plan => plan.id)
+        });
     }
     componentDidUpdate() {
         // Get the width and height of a single box at the time

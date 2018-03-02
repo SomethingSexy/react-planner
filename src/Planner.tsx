@@ -1,8 +1,9 @@
 /* global window, document */
 import invariant from 'invariant';
+import { isEqual } from 'lodash';
 import * as moment from 'moment';
 import PropTypes from 'prop-types';
-import React, { PureComponent } from 'react';
+import React, { Component } from 'react';
 import { findDOMNode } from 'react-dom';
 import ReactGridLayout, { WidthProvider } from 'react-grid-layout';
 import 'react-grid-layout/css/styles.css';  // tslint:disable-line
@@ -57,7 +58,7 @@ export interface IPlannerState {
 // build matrix of days and times for quick look up when moving and expanding
 // [1,1] = Sunday at 6:00
 // [1,2] = Sunday at 6:05
-export default class Planner extends PureComponent<IPlanner, IPlannerState> {
+export default class Planner extends Component<IPlanner, IPlannerState> {
   public static propTypes = {
     // for now Sunday = 0, Saturday = 6
     dateStart: PropTypes.string,
@@ -182,42 +183,48 @@ export default class Planner extends PureComponent<IPlanner, IPlannerState> {
     document.addEventListener('keydown', this.handleCloseModal);
   }
 
-  public componentWillReceiveProps(nextProps: IPlanner) {
+  public shouldComponentUpdate(nextProps: IPlanner) {
     if (this.props.interval !== nextProps.interval
       || this.props.days !== nextProps.days
       || this.props.dateStart !== nextProps.dateStart
       || this.props.dateEnd !== nextProps.dateEnd
-      || this.props.plans !== nextProps.plans
+      || !isEqual(this.props.plans, nextProps.plans)
     ) {
-      const regInterval = new RegExp(intervalMatch, 'g').exec(nextProps.interval);
-      const interval = regInterval ? regInterval[1] : '5';
-      // this will build all time intervals per day, this will get used for future lookups
-      const intervals = calculateIntervals(
-        parseInt(interval, 10), nextProps.start || 6, nextProps.end || 24
-      );
-
-      const days = range(nextProps.dateStart, nextProps.dateEnd || nextProps.days);
-      const gDaysOfWeek = gridDays(days);
-      // construct the lookup table, this will be an array of arrays to fast look up data about
-      // the cross section of day and time.  [day][time]
-      const lookup = createLookupTables(days, intervals);
-
-      // times for the view
-      const gTimes = gridTimes(intervals);
-
-      // given the plans, create the data necessary for the view
-      const gPlans = gridPlans(nextProps.plans, lookup);
-
-      this.setState({
-        days,
-        gDaysOfWeek,
-        gTimes,
-        intervals,
-        lookup,
-        gPlans,
-        planIds: nextProps.plans.map(plan => plan.id)
-      });
+      return true;
     }
+
+    return false;
+  }
+
+  public componentWillReceiveProps(nextProps: IPlanner) {
+    const regInterval = new RegExp(intervalMatch, 'g').exec(nextProps.interval);
+    const interval = regInterval ? regInterval[1] : '5';
+    // this will build all time intervals per day, this will get used for future lookups
+    const intervals = calculateIntervals(
+      parseInt(interval, 10), nextProps.start || 6, nextProps.end || 24
+    );
+
+    const days = range(nextProps.dateStart, nextProps.dateEnd || nextProps.days);
+    const gDaysOfWeek = gridDays(days);
+    // construct the lookup table, this will be an array of arrays to fast look up data about
+    // the cross section of day and time.  [day][time]
+    const lookup = createLookupTables(days, intervals);
+
+    // times for the view
+    const gTimes = gridTimes(intervals);
+
+    // given the plans, create the data necessary for the view
+    const gPlans = gridPlans(nextProps.plans, lookup);
+
+    this.setState({
+      days,
+      gDaysOfWeek,
+      gTimes,
+      intervals,
+      lookup,
+      gPlans,
+      planIds: nextProps.plans.map(plan => plan.id)
+    });
   }
 
   public componentDidUpdate() {
@@ -347,6 +354,7 @@ export default class Planner extends PureComponent<IPlanner, IPlannerState> {
   }
 
   private handleLayoutChange = (layout: any) => {
+    console.log('layout change'); // tslint:disable-line
     const { gPlans, lookup, planIds } = this.state;
     const { plans, onUpdatePlans } = this.props;
     // grab the plans
@@ -374,7 +382,7 @@ export default class Planner extends PureComponent<IPlanner, IPlannerState> {
             ...plan,
             date: lookup.grid[nextPlan.x - 1][nextPlan.y - 1].day,
             time: nextPlan.y - 1,
-            toTime: nextPlan.h
+            toTime: (nextPlan.y - 1) + (nextPlan.h - 1) + 1
           };
         }
 
@@ -394,7 +402,8 @@ export default class Planner extends PureComponent<IPlanner, IPlannerState> {
       const dayTime = lookup.grid[x - 1][y - 1];
       const id = uuid.v4();
 
-      // TODO: toTime here is not working
+      // TODO: toTime here is not working, using y here but when we process it we are
+      // using that for height so it is getting borked
       onUpdatePlans([...plans, { id, date: dayTime.day, time: y - 1, toTime: y }]);
     }
   }
