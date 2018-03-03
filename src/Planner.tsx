@@ -183,11 +183,12 @@ export default class Planner extends Component<IPlanner, IPlannerState> {
     document.addEventListener('keydown', this.handleCloseModal);
   }
 
-  public shouldComponentUpdate(nextProps: IPlanner) {
+  public shouldComponentUpdate(nextProps: IPlanner, nextState: IPlannerState) {
     if (this.props.interval !== nextProps.interval
       || this.props.days !== nextProps.days
       || this.props.dateStart !== nextProps.dateStart
       || this.props.dateEnd !== nextProps.dateEnd
+      || this.state.selectedPlan !== nextState.selectedPlan
       || !isEqual(this.props.plans, nextProps.plans)
     ) {
       return true;

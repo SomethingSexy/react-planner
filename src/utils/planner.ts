@@ -72,7 +72,7 @@ export const gridPlans = (plans: Types.IPlan[], lookup: Types.ILookup): Types.IG
     return {
       h: height || 1,
       i: plan.id,
-      label: `${dayTime.day}: ${dayTime.time} - ${toTime.time}`,
+      label: `${dayTime.time} - ${toTime.time}`,
       w: 1,
       x: dateIndex + 1,
       y: plan.time + 1,
