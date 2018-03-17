@@ -3,7 +3,7 @@ import invariant from 'invariant';
 import { isEqual } from 'lodash';
 import * as moment from 'moment';
 import PropTypes from 'prop-types';
-import React, { Component } from 'react';
+import React, { Component, ReactNode } from 'react';
 import { findDOMNode } from 'react-dom';
 import ReactGridLayout, { WidthProvider } from 'react-grid-layout';
 import 'react-grid-layout/css/styles.css';  // tslint:disable-line
@@ -40,6 +40,7 @@ export interface IPlanner {
   interval: string;
   onUpdatePlans: (plans: Types.IPlan[]) => {};
   plans: Types.IPlan[];
+  renderPlanEdit: Types.RenderPlanEdit;
   start?: number;
 }
 
@@ -80,6 +81,7 @@ export default class Planner extends Component<IPlanner, IPlannerState> {
         time: PropTypes.number
       })
     ),
+    renderPlanEdit: PropTypes.func,
     start: PropTypes.number,
     onUpdatePlans: PropTypes.func
   };
@@ -263,7 +265,8 @@ export default class Planner extends Component<IPlanner, IPlannerState> {
       onLayoutChange: this.handleLayoutChange,
       ref: (ref: any) => { this.grid = ref; },
       rowHeight: 30,
-      compactType: null
+      compactType: null,
+      style: { overflowY: 'auto' } // TODO: Figure out how we want to handle this stuff
     };
 
     return (
@@ -284,13 +287,13 @@ export default class Planner extends Component<IPlanner, IPlannerState> {
           contentLabel="Edit Plan"
           isOpen={!!selectedPlan}
         >
-         {selectedPlan && <EditPlan plan={selectedPlan} />}
+          {selectedPlan && this.renderPlanEdit(selectedPlan)}
         </Modal>
       </div>
     );
   }
 
-  private renderTimes() {
+  private renderTimes(): ReactNode {
     const { gTimes } = this.state;
     return gTimes.map(
       time =>
@@ -298,14 +301,14 @@ export default class Planner extends Component<IPlanner, IPlannerState> {
     );
   }
 
-  private renderDays() {
+  private renderDays(): ReactNode {
     const { gDaysOfWeek } = this.state;
     return gDaysOfWeek.map(day =>
       <div data-grid={day} key={day.key}><Day day={day.day} /></div>
     );
   }
 
-  private renderPlans() {
+  private renderPlans(): ReactNode {
     const { gPlans } = this.state;
     return gPlans.map(plan => (
       <div key={plan.i} style={{ border: '1px solid #eee' }}>
@@ -316,6 +319,17 @@ export default class Planner extends Component<IPlanner, IPlannerState> {
         />
       </div>
     ));
+  }
+
+  private renderPlanEdit(selectedPlan: Types.IPlan): ReactNode {
+    const { renderPlanEdit } = this.props;
+    return (
+      <EditPlan
+        onEditPlan={this.handlePlanUpdate}
+        plan={selectedPlan}
+        render={renderPlanEdit}
+      />
+    );
   }
 
   private getGrid(event: any): { x: number; y: number} {
@@ -429,5 +443,26 @@ export default class Planner extends Component<IPlanner, IPlannerState> {
     const { plans } = this.props;
     const selectedPlan = plans.find(plan => plan.id === id);
     this.setState({ selectedPlan: selectedPlan || null });
+  }
+
+  /**
+   * Handles updating a plan with key and value.  All properties will
+   * be stored at the root level.  It is up to the user to make sure
+   * everything is in sync with the edit components.
+   */
+  private handlePlanUpdate = (id: string, name: string, value: any) => {
+    const { onUpdatePlans, plans } = this.props;
+    const updatedPlans = plans.map(plan => {
+      if (plan.id !== id) {
+        return plan;
+      }
+
+      return {
+        ...plan,
+        [name]: value
+      };
+    });
+
+    onUpdatePlans(updatedPlans);
   }
 }

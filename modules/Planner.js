@@ -96,6 +96,21 @@ export default class Planner extends Component {
             const selectedPlan = plans.find(plan => plan.id === id);
             this.setState({ selectedPlan: selectedPlan || null });
         };
+        /**
+         * Handles updating a plan with key and value.  All properties will
+         * be stored at the root level.  It is up to the user to make sure
+         * everything is in sync with the edit components.
+         */
+        this.handlePlanUpdate = (id, name, value) => {
+            const { onUpdatePlans, plans } = this.props;
+            const updatedPlans = plans.map(plan => {
+                if (plan.id !== id) {
+                    return plan;
+                }
+                return Object.assign({}, plan, { [name]: value });
+            });
+            onUpdatePlans(updatedPlans);
+        };
         const { days, end = 24, interval = '5m', start = 6, 
         // plans = [],
         dateStart, dateEnd } = props;
@@ -222,7 +237,8 @@ export default class Planner extends Component {
             onLayoutChange: this.handleLayoutChange,
             ref: (ref) => { this.grid = ref; },
             rowHeight: 30,
-            compactType: null
+            compactType: null,
+            style: { overflowY: 'auto' } // TODO: Figure out how we want to handle this stuff
         };
         return (React.createElement("div", null,
             React.createElement("div", { onDoubleClick: this.handleAddPlan },
@@ -231,7 +247,7 @@ export default class Planner extends Component {
                     this.renderTimes(),
                     this.renderDays(),
                     this.renderPlans())),
-            React.createElement(Modal, { contentLabel: "Edit Plan", isOpen: !!selectedPlan }, selectedPlan && React.createElement(EditPlan, { plan: selectedPlan }))));
+            React.createElement(Modal, { contentLabel: "Edit Plan", isOpen: !!selectedPlan }, selectedPlan && this.renderPlanEdit(selectedPlan))));
     }
     renderTimes() {
         const { gTimes } = this.state;
@@ -247,6 +263,10 @@ export default class Planner extends Component {
         const { gPlans } = this.state;
         return gPlans.map(plan => (React.createElement("div", { key: plan.i, style: { border: '1px solid #eee' } },
             React.createElement(Plan, { plan: plan, onRemovePlan: this.handleRemovePlan, onSelectPlan: this.handleSelectPlan }))));
+    }
+    renderPlanEdit(selectedPlan) {
+        const { renderPlanEdit } = this.props;
+        return (React.createElement(EditPlan, { onEditPlan: this.handlePlanUpdate, plan: selectedPlan, render: renderPlanEdit }));
     }
     getGrid(event) {
         const coordinates = this.coordinates;
@@ -293,6 +313,7 @@ Planner.propTypes = {
         // TODO: Convert this to physical time and build from there
         time: PropTypes.number
     })),
+    renderPlanEdit: PropTypes.func,
     start: PropTypes.number,
     onUpdatePlans: PropTypes.func
 };

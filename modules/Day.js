@@ -1,7 +1,7 @@
 import PropTypes from 'prop-types';
 import React from 'react';
 const Day = ({ day }) => {
-    const label = `Day ${day}`;
+    const label = day;
     return React.createElement("div", null,
         React.createElement("strong", null, label));
 };

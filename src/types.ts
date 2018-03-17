@@ -1,3 +1,5 @@
+import { ReactNode } from 'react';
+
 export interface ILookup {
   byDate: { [key: string]: number };
   grid: {
@@ -11,6 +13,8 @@ export interface IPlan {
   id: string;
   time: number;
   toTime: number;
+  // stores dynamic plan data
+  [key: string]: any;
 }
 
 export interface ICoordinates {
@@ -49,3 +53,7 @@ export interface IGridPlan {
   x: number;
   y: number;
 }
+
+export type RenderPlanEdit = (plan: IPlan, onEditPlan: EditPlan) => ReactNode;
+
+export type EditPlan = (id: string, name: string, value: any) => void;

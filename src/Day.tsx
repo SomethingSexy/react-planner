@@ -4,7 +4,7 @@ import React, { StatelessComponent } from 'react';
 export interface IDay { day: string; }
 
 const Day: StatelessComponent<IDay> = ({ day }) => {
-  const label = `Day ${day}`;
+  const label = day;
   return <div><strong>{label}</strong></div>;
 };
 
