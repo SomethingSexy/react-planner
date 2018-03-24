@@ -228,7 +228,7 @@ export default class Planner extends Component {
         document.removeEventListener('keydown', this.handleCloseModal);
     }
     render() {
-        const { gPlans, days, selectedPlan } = this.state;
+        const { gPlans, days } = this.state;
         // Setting it up this way because d.ts is not correct for rgl
         const rglProps = {
             className: 'layout',
@@ -247,7 +247,15 @@ export default class Planner extends Component {
                     this.renderTimes(),
                     this.renderDays(),
                     this.renderPlans())),
-            React.createElement(Modal, { contentLabel: "Edit Plan", isOpen: !!selectedPlan }, selectedPlan && this.renderPlanEdit(selectedPlan))));
+            this.renderModal()));
+    }
+    renderModal() {
+        const { selectedPlan } = this.state;
+        const { renderModal } = this.props;
+        if (renderModal && selectedPlan) {
+            return renderModal(selectedPlan, !!selectedPlan);
+        }
+        return (React.createElement(Modal, { contentLabel: "Edit Plan", isOpen: !!selectedPlan }, selectedPlan && this.renderPlanEdit(selectedPlan)));
     }
     renderTimes() {
         const { gTimes } = this.state;

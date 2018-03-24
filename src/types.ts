@@ -56,4 +56,6 @@ export interface IGridPlan {
 
 export type RenderPlanEdit = (plan: IPlan, onEditPlan: EditPlan) => ReactNode;
 
+export type RenderModal = (plan: IPlan, isOpen: boolean) => ReactNode;
+
 export type EditPlan = (id: string, name: string, value: any) => void;
