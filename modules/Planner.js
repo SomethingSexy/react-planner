@@ -1,6 +1,6 @@
 /* global window, document */
 import invariant from 'invariant';
-import { isEqual } from 'lodash';
+import { isEqual, uniq } from 'lodash';
 import * as moment from 'moment';
 import PropTypes from 'prop-types';
 import React, { Component } from 'react';
@@ -22,13 +22,17 @@ const WidthReactGridLayout = WidthProvider(ReactGridLayout);
 // const validIntervals = [1, 5, 15, 30, 60];
 const intervalMatch = /(\d+)(m|h)+/;
 const spacer = { x: 0, y: 0, w: 1, h: 1, static: true };
-const keyMap = {
-    deleteNode: ['del', 'backspace'],
-    moveNodeUp: ['up'],
-    moveNodeDown: ['down']
-};
 const UP = 'up';
 const DOWN = 'down';
+const RIGHT = 'right';
+const LEFT = 'left';
+const keyMap = {
+    deleteNode: ['del', 'backspace'],
+    moveNodeUp: [UP],
+    moveNodeDown: [DOWN],
+    moveNodeRight: [RIGHT],
+    moveNodeLeft: [LEFT]
+};
 // Add interval, which can be specific to start say, 1, 5, 15, 30, 1hour
 // build matrix of days and times for quick look up when moving and expanding
 // [1,1] = Sunday at 6:00
@@ -104,6 +108,24 @@ export default class Planner extends Component {
                     const moveTo = times[direction === UP ? toMoveIndex - 1 : toMoveIndex + 1];
                     if (moveTo) {
                         this.setState({ highlightedPlan: moveTo.id });
+                    }
+                }
+                else if (planToMove && (direction === RIGHT || direction === LEFT)) {
+                    // for left and right we need to get next and prev column
+                    const dates = uniq(plans
+                        .map(plan => plan.date));
+                    const toMoveIndex = dates.indexOf(planToMove.date);
+                    const moveToDate = dates[direction === LEFT ? toMoveIndex - 1 : toMoveIndex + 1];
+                    if (moveToDate) {
+                        // now find the time we should move to
+                        const sorted = plans
+                            .filter(plan => plan.date === moveToDate)
+                            .sort((a, b) => a.time - b.time);
+                        const sameTime = sorted.find(plan => plan.time === planToMove.time);
+                        const moveTo = sameTime ? sameTime : sorted[0];
+                        if (moveTo) {
+                            this.setState({ highlightedPlan: moveTo.id });
+                        }
                     }
                 }
             }
@@ -294,7 +316,9 @@ export default class Planner extends Component {
         const handlers = {
             deleteNode: this.handleRemoveHighlightedPlan,
             moveNodeUp: this.handleMoveHighlightedPlan.bind(this.handleMoveHighlightedPlan, UP),
-            moveNodeDown: this.handleMoveHighlightedPlan.bind(this.handleMoveHighlightedPlan, DOWN)
+            moveNodeDown: this.handleMoveHighlightedPlan.bind(this.handleMoveHighlightedPlan, DOWN),
+            moveNodeRight: this.handleMoveHighlightedPlan.bind(this.handleMoveHighlightedPlan, RIGHT),
+            moveNodeLeft: this.handleMoveHighlightedPlan.bind(this.handleMoveHighlightedPlan, LEFT)
         };
         return (React.createElement(HotKeys, { handlers: handlers, keyMap: keyMap },
             React.createElement("div", { onDoubleClick: this.handleAddPlan },
