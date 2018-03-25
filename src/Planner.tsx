@@ -6,6 +6,7 @@ import PropTypes from 'prop-types';
 import React, { Component, ReactNode } from 'react';
 import { findDOMNode } from 'react-dom';
 import ReactGridLayout, { WidthProvider } from 'react-grid-layout';
+import { HotKeys } from 'react-hotkeys';
 import 'react-grid-layout/css/styles.css';  // tslint:disable-line
 import Modal from 'react-modal';
 import 'react-resizable/css/styles.css';  // tslint:disable-line
@@ -32,6 +33,14 @@ const WidthReactGridLayout = WidthProvider(ReactGridLayout);
 const intervalMatch = /(\d+)(m|h)+/;
 const spacer = { x: 0, y: 0, w: 1, h: 1, static: true };
 
+const keyMap = {
+  deleteNode: ['del', 'backspace'],
+  moveNodeUp: ['up'],
+  moveNodeDown: ['down']
+};
+const UP = 'up';
+const DOWN = 'down';
+
 export interface IPlanner {
   dateEnd?: string;
   dateStart: string;
@@ -54,6 +63,7 @@ export interface IPlannerState {
   lookup: Types.ILookup;
   planIds: string[];
   selectedPlan: Types.IPlan | null;
+  highlightedPlan: string | null;
 }
 
 // Add interval, which can be specific to start say, 1, 5, 15, 30, 1hour
@@ -160,7 +170,8 @@ export default class Planner extends Component<IPlanner, IPlannerState> {
       days: rangeDays,
       // use for quick lookup
       planIds: props.plans.map(plan => plan.id),
-      selectedPlan: null
+      selectedPlan: null,
+      highlightedPlan: null
     };
   }
 
@@ -193,6 +204,7 @@ export default class Planner extends Component<IPlanner, IPlannerState> {
       || this.props.dateEnd !== nextProps.dateEnd
       || this.state.selectedPlan !== nextState.selectedPlan
       || !isEqual(this.props.plans, nextProps.plans)
+      || this.state.highlightedPlan !== nextState.highlightedPlan
     ) {
       return true;
     }
@@ -201,34 +213,45 @@ export default class Planner extends Component<IPlanner, IPlannerState> {
   }
 
   public componentWillReceiveProps(nextProps: IPlanner) {
-    const regInterval = new RegExp(intervalMatch, 'g').exec(nextProps.interval);
-    const interval = regInterval ? regInterval[1] : '5';
+    const { highlightedPlan } = this.state;
+    const { interval, start, end, dateStart, dateEnd, days, plans } = nextProps;
+
+    const regInterval = new RegExp(intervalMatch, 'g').exec(interval);
+    const computedInterval = regInterval ? regInterval[1] : '5';
     // this will build all time intervals per day, this will get used for future lookups
     const intervals = calculateIntervals(
-      parseInt(interval, 10), nextProps.start || 6, nextProps.end || 24
+      parseInt(computedInterval, 10), start || 6, end || 24
     );
 
-    const days = range(nextProps.dateStart, nextProps.dateEnd || nextProps.days);
-    const gDaysOfWeek = gridDays(days);
+    const computedDays = range(dateStart, dateEnd || days);
+    const gDaysOfWeek = gridDays(computedDays);
     // construct the lookup table, this will be an array of arrays to fast look up data about
     // the cross section of day and time.  [day][time]
-    const lookup = createLookupTables(days, intervals);
+    const lookup = createLookupTables(computedDays, intervals);
 
     // times for the view
     const gTimes = gridTimes(intervals);
 
     // given the plans, create the data necessary for the view
-    const gPlans = gridPlans(nextProps.plans, lookup);
+    const gPlans = gridPlans(plans, lookup);
 
-    this.setState({
-      days,
+    const nextState = {
       gDaysOfWeek,
       gTimes,
+      highlightedPlan,
       intervals,
       lookup,
       gPlans,
-      planIds: nextProps.plans.map(plan => plan.id)
-    });
+      days: computedDays,
+      planIds: plans.map(plan => plan.id),
+    };
+
+    // if we removed the plan then remove the highlighting
+    if (!plans.find(plan => plan.id === highlightedPlan)) {
+      nextState.highlightedPlan = null;
+    }
+
+    this.setState(nextState);
   }
 
   public componentDidUpdate() {
@@ -270,8 +293,14 @@ export default class Planner extends Component<IPlanner, IPlannerState> {
       style: { overflowY: 'auto' } // TODO: Figure out how we want to handle this stuff
     };
 
+    const handlers = {
+      deleteNode: this.handleRemoveHighlightedPlan,
+      moveNodeUp: this.handleMoveHighlightedPlan.bind(this.handleMoveHighlightedPlan, UP),
+      moveNodeDown: this.handleMoveHighlightedPlan.bind(this.handleMoveHighlightedPlan, DOWN)
+    };
+
     return (
-      <div>
+      <HotKeys handlers={handlers} keyMap={keyMap}>
         <div // eslint-disable-line jsx-a11y/no-static-element-interactions
           onDoubleClick={this.handleAddPlan}
         >
@@ -285,7 +314,7 @@ export default class Planner extends Component<IPlanner, IPlannerState> {
           </WidthReactGridLayout>
         </div>
         {this.renderModal()}
-      </div>
+      </HotKeys>
     );
   }
 
@@ -293,7 +322,7 @@ export default class Planner extends Component<IPlanner, IPlannerState> {
     const { selectedPlan } = this.state;
     const { renderModal } = this.props;
     if (renderModal && selectedPlan) {
-      return renderModal(selectedPlan, !!selectedPlan);
+      return renderModal(selectedPlan, this.renderPlanEdit, !!selectedPlan);
     }
     return (
       <Modal
@@ -321,11 +350,13 @@ export default class Planner extends Component<IPlanner, IPlannerState> {
   }
 
   private renderPlans(): ReactNode {
-    const { gPlans } = this.state;
+    const { gPlans, highlightedPlan } = this.state;
     return gPlans.map(plan => (
       <div key={plan.i} style={{ border: '1px solid #eee' }}>
         <Plan
+          highlightedPlan={highlightedPlan}
           plan={plan}
+          onOpenPlan={this.handleOpenPlan}
           onRemovePlan={this.handleRemovePlan}
           onSelectPlan={this.handleSelectPlan}
         />
@@ -333,7 +364,7 @@ export default class Planner extends Component<IPlanner, IPlannerState> {
     ));
   }
 
-  private renderPlanEdit(selectedPlan: Types.IPlan): ReactNode {
+  private renderPlanEdit = (selectedPlan: Types.IPlan): ReactNode => {
     const { renderPlanEdit } = this.props;
     return (
       <EditPlan
@@ -435,6 +466,38 @@ export default class Planner extends Component<IPlanner, IPlannerState> {
     }
   }
 
+  private handleMoveHighlightedPlan = (direction: string) => {
+    const { highlightedPlan } = this.state;
+    const { plans } = this.props;
+
+    if (highlightedPlan) {
+      const planToMove = plans.find(plan => plan.id === highlightedPlan);
+      if (planToMove && (direction === UP || direction === DOWN)) {
+        // find the highlighted plan
+        // find all of the plans with the same date
+        // find the plan previous
+        const times = plans
+          .filter(plan => plan.date === planToMove.date)
+          .sort((a, b) => a.time - b.time);
+
+        const toMoveIndex = times.findIndex(plan => plan.id === planToMove.id);
+        const moveTo = times[direction === UP ? toMoveIndex - 1 : toMoveIndex + 1];
+
+        if (moveTo) {
+          this.setState({ highlightedPlan: moveTo.id });
+        }
+      }
+    }
+  }
+
+  private handleRemoveHighlightedPlan = () => {
+    const { highlightedPlan } = this.state;
+
+    if (highlightedPlan) {
+      this.handleRemovePlan(highlightedPlan);
+    }
+  }
+
   private handleRemovePlan = (id: string) => {
     const { plans, onUpdatePlans } = this.props;
     const index = plans.findIndex(plan => plan.id === id);
@@ -451,10 +514,14 @@ export default class Planner extends Component<IPlanner, IPlannerState> {
     onUpdatePlans(updatedPlans);
   }
 
-  private handleSelectPlan = (id: string) => {
+  private handleOpenPlan = (id: string) => {
     const { plans } = this.props;
     const selectedPlan = plans.find(plan => plan.id === id);
     this.setState({ selectedPlan: selectedPlan || null });
+  }
+
+  private handleSelectPlan = (id: string) => {
+    this.setState({ highlightedPlan: id });
   }
 
   /**

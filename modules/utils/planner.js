@@ -51,9 +51,7 @@ export const gridPlans = (plans, lookup) => plans.map(plan => {
     const dateIndex = lookup.byDate[plan.date];
     const dayTime = lookup.grid[dateIndex][plan.time];
     const toTime = lookup.grid[dateIndex][plan.toTime];
-    console.log(plan.time, plan.toTime); // tslint:disable-line
     const height = plan.toTime - plan.time;
-    console.log(height || 1); // tslint:disable-line
     return {
         h: height || 1,
         i: plan.id,

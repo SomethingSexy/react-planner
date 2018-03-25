@@ -61,22 +61,24 @@ export const range = (startDate: string, endDate: string | number | undefined): 
 export const gridDays = (days: string[]): Types.IGridDay[] =>
   days.map((day, index) => ({ day, x: index + 1, y: 0, w: 1, h: 1, static: true, key: uuid.v4() }));
 
-export const gridPlans = (plans: Types.IPlan[], lookup: Types.ILookup): Types.IGridPlan[] =>
-  plans.map(plan => {
-    const dateIndex = lookup.byDate[plan.date];
-    const dayTime = lookup.grid[dateIndex][plan.time];
-    const toTime = lookup.grid[dateIndex][plan.toTime];
-    console.log(plan.time, plan.toTime); // tslint:disable-line
-    const height = plan.toTime - plan.time;
-    console.log(height || 1); // tslint:disable-line
-    return {
-      h: height || 1,
-      i: plan.id,
-      label: `${dayTime.time} - ${toTime.time}`,
-      w: 1,
-      x: dateIndex + 1,
-      y: plan.time + 1,
-      minW: 1,
-      maxW: 1
-    };
-  });
+export const gridPlans =
+  (plans: Types.IPlan[], lookup: Types.ILookup)
+  : Types.IGridPlan[] =>
+    plans.map(plan => {
+      const dateIndex = lookup.byDate[plan.date];
+      const dayTime = lookup.grid[dateIndex][plan.time];
+      const toTime = lookup.grid[dateIndex][plan.toTime];
+
+      const height = plan.toTime - plan.time;
+
+      return {
+        h: height || 1,
+        i: plan.id,
+        label: `${dayTime.time} - ${toTime.time}`,
+        w: 1,
+        x: dateIndex + 1,
+        y: plan.time + 1,
+        minW: 1,
+        maxW: 1
+      };
+    });
