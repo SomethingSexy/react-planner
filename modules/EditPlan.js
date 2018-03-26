@@ -3,9 +3,7 @@ import React, { PureComponent } from 'react';
 class EditPlan extends PureComponent {
     render() {
         const { onEditPlan, render, plan } = this.props;
-        return (React.createElement("div", null,
-            React.createElement("h2", null, plan.id),
-            render ? render(plan, onEditPlan) : null));
+        return (React.createElement("div", null, render ? render(plan, onEditPlan) : null));
     }
 }
 EditPlan.propTypes = {

@@ -4,7 +4,7 @@ import React, { StatelessComponent } from 'react';
 export interface ITime { time: string; }
 
 const Time: StatelessComponent<ITime> = ({ time }) =>
-  <div><strong style={{ textAlign: 'center' }}>{time}</strong></div>;
+  <div style={{ textAlign: 'center' }}><strong>{time}</strong></div>;
 
 Time.propTypes = {
   time: PropTypes.string

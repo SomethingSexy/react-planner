@@ -31,7 +31,8 @@ const keyMap = {
     moveNodeUp: [UP],
     moveNodeDown: [DOWN],
     moveNodeRight: [RIGHT],
-    moveNodeLeft: [LEFT]
+    moveNodeLeft: [LEFT],
+    openNode: ['enter']
 };
 // Add interval, which can be specific to start say, 1, 5, 15, 30, 1hour
 // build matrix of days and times for quick look up when moving and expanding
@@ -113,7 +114,16 @@ export default class Planner extends Component {
                 else if (planToMove && (direction === RIGHT || direction === LEFT)) {
                     // for left and right we need to get next and prev column
                     const dates = uniq(plans
-                        .map(plan => plan.date));
+                        .map(plan => plan.date)
+                        .sort((a, b) => {
+                        if (a < b) {
+                            return -1;
+                        }
+                        if (b < a) {
+                            return 1;
+                        }
+                        return 0;
+                    }));
                     const toMoveIndex = dates.indexOf(planToMove.date);
                     const moveToDate = dates[direction === LEFT ? toMoveIndex - 1 : toMoveIndex + 1];
                     if (moveToDate) {
@@ -369,10 +379,10 @@ export default class Planner extends Component {
     }
     isValidMove(plan) {
         const { lookup } = this.state;
-        if (typeof lookup.grid[plan.x] === 'undefined') {
+        if (typeof lookup.grid[plan.x - 1] === 'undefined') {
             return false;
         }
-        if (typeof lookup.grid[plan.x][plan.y] === 'undefined') {
+        if (typeof lookup.grid[plan.x - 1][plan.y] === 'undefined') {
             return false;
         }
         return true;

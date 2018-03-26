@@ -43,7 +43,8 @@ const keyMap = {
   moveNodeUp: [UP],
   moveNodeDown: [DOWN],
   moveNodeRight: [RIGHT],
-  moveNodeLeft: [LEFT]
+  moveNodeLeft: [LEFT],
+  openNode: ['enter']
 };
 
 export interface IPlanner {
@@ -403,11 +404,11 @@ export default class Planner extends Component<IPlanner, IPlannerState> {
 
   private isValidMove(plan: Types.IGridPlan) {
     const { lookup } = this.state;
-    if (typeof lookup.grid[plan.x] === 'undefined') {
+    if (typeof lookup.grid[plan.x - 1] === 'undefined') {
       return false;
     }
 
-    if (typeof lookup.grid[plan.x][plan.y] === 'undefined') {
+    if (typeof lookup.grid[plan.x - 1][plan.y] === 'undefined') {
       return false;
     }
 
@@ -498,6 +499,17 @@ export default class Planner extends Component<IPlanner, IPlannerState> {
         const dates = uniq(
           plans
             .map(plan => plan.date)
+            .sort((a, b) => {
+              if (a < b) {
+                return -1;
+              }
+
+              if (b < a) {
+                return 1;
+              }
+
+              return 0;
+            })
           );
 
         const toMoveIndex = dates.indexOf(planToMove.date);

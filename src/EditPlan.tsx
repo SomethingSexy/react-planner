@@ -21,7 +21,6 @@ class EditPlan extends PureComponent<IEditPlan> {
     const { onEditPlan, render, plan } = this.props;
     return (
       <div>
-        <h2>{plan.id}</h2>
         {render ? render(plan, onEditPlan) : null}
       </div>
     );

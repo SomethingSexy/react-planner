@@ -2,7 +2,7 @@ import PropTypes from 'prop-types';
 import React from 'react';
 const Day = ({ day }) => {
     const label = day;
-    return React.createElement("div", null,
+    return React.createElement("div", { style: { textAlign: 'center' } },
         React.createElement("strong", null, label));
 };
 Day.propTypes = {

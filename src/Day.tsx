@@ -5,7 +5,7 @@ export interface IDay { day: string; }
 
 const Day: StatelessComponent<IDay> = ({ day }) => {
   const label = day;
-  return <div><strong>{label}</strong></div>;
+  return <div style={{ textAlign: 'center' }}><strong>{label}</strong></div>;
 };
 
 Day.propTypes = {
