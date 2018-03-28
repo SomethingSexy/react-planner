@@ -244,7 +244,7 @@ export default class Planner extends Component {
             width: Math.round(width)
         };
         document.addEventListener('keydown', (event) => {
-            if (event.key === 27) {
+            if (event.keyCode === 27) {
                 this.handleCloseModal();
             }
         });
@@ -334,13 +334,14 @@ export default class Planner extends Component {
             moveNodeRight: this.handleMoveHighlightedPlan.bind(this.handleMoveHighlightedPlan, RIGHT),
             moveNodeLeft: this.handleMoveHighlightedPlan.bind(this.handleMoveHighlightedPlan, LEFT)
         };
-        return (React.createElement(HotKeys, { handlers: handlers, keyMap: keyMap },
-            React.createElement("div", { onDoubleClick: this.handleAddPlan },
-                React.createElement(WidthReactGridLayout, Object.assign({}, rglProps),
-                    React.createElement("div", { "data-grid": spacer, key: "spacer", ref: ref => { this.spacer = ref; } }),
-                    this.renderTimes(),
-                    this.renderDays(),
-                    this.renderPlans())),
+        return (React.createElement(React.Fragment, null,
+            React.createElement(HotKeys, { handlers: handlers, keyMap: keyMap },
+                React.createElement("div", { onDoubleClick: this.handleAddPlan },
+                    React.createElement(WidthReactGridLayout, Object.assign({}, rglProps),
+                        React.createElement("div", { "data-grid": spacer, key: "spacer", ref: ref => { this.spacer = ref; } }),
+                        this.renderTimes(),
+                        this.renderDays(),
+                        this.renderPlans()))),
             this.renderModal()));
     }
     renderModal() {

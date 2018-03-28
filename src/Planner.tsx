@@ -201,7 +201,7 @@ export default class Planner extends Component<IPlanner, IPlannerState> {
     };
 
     document.addEventListener('keydown', (event: any) => {
-      if (event.key === 27) {
+      if (event.keyCode === 27) {
         this.handleCloseModal();
       }
     });
@@ -312,21 +312,23 @@ export default class Planner extends Component<IPlanner, IPlannerState> {
     };
 
     return (
-      <HotKeys handlers={handlers} keyMap={keyMap}>
-        <div // eslint-disable-line jsx-a11y/no-static-element-interactions
-          onDoubleClick={this.handleAddPlan}
-        >
-          <WidthReactGridLayout
-            {...rglProps}
+      <>
+        <HotKeys handlers={handlers} keyMap={keyMap}>
+          <div // eslint-disable-line jsx-a11y/no-static-element-interactions
+            onDoubleClick={this.handleAddPlan}
           >
-            <div data-grid={spacer} key="spacer" ref={ref => { this.spacer = ref; }} />
-            {this.renderTimes()}
-            {this.renderDays()}
-            {this.renderPlans()}
-          </WidthReactGridLayout>
-        </div>
+            <WidthReactGridLayout
+              {...rglProps}
+            >
+              <div data-grid={spacer} key="spacer" ref={ref => { this.spacer = ref; }} />
+              {this.renderTimes()}
+              {this.renderDays()}
+              {this.renderPlans()}
+            </WidthReactGridLayout>
+          </div>
+        </HotKeys>
         {this.renderModal()}
-      </HotKeys>
+      </>
     );
   }
 
