@@ -200,7 +200,11 @@ export default class Planner extends Component<IPlanner, IPlannerState> {
       width: Math.round(width)
     };
 
-    document.addEventListener('keydown', this.handleCloseModal);
+    document.addEventListener('keydown', (event: any) => {
+      if (event.key === 27) {
+        this.handleCloseModal();
+      }
+    });
   }
 
   public shouldComponentUpdate(nextProps: IPlanner, nextState: IPlannerState) {
@@ -330,7 +334,14 @@ export default class Planner extends Component<IPlanner, IPlannerState> {
     const { selectedPlan } = this.state;
     const { renderModal } = this.props;
     if (renderModal && selectedPlan) {
-      return renderModal(selectedPlan, this.renderPlanEdit, !!selectedPlan);
+      return renderModal(
+        selectedPlan,
+        {
+          renderPlanEdit: this.renderPlanEdit,
+          onClose: this.handleCloseModal
+        },
+        !!selectedPlan
+      );
     }
     return (
       <Modal

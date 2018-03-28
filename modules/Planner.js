@@ -243,7 +243,11 @@ export default class Planner extends Component {
             height: Math.round(height),
             width: Math.round(width)
         };
-        document.addEventListener('keydown', this.handleCloseModal);
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 27) {
+                this.handleCloseModal();
+            }
+        });
     }
     shouldComponentUpdate(nextProps, nextState) {
         if (this.props.interval !== nextProps.interval
@@ -343,7 +347,10 @@ export default class Planner extends Component {
         const { selectedPlan } = this.state;
         const { renderModal } = this.props;
         if (renderModal && selectedPlan) {
-            return renderModal(selectedPlan, this.renderPlanEdit, !!selectedPlan);
+            return renderModal(selectedPlan, {
+                renderPlanEdit: this.renderPlanEdit,
+                onClose: this.handleCloseModal
+            }, !!selectedPlan);
         }
         return (React.createElement(Modal, { contentLabel: "Edit Plan", isOpen: !!selectedPlan }, selectedPlan && this.renderPlanEdit(selectedPlan)));
     }
