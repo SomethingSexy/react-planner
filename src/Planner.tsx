@@ -68,7 +68,7 @@ export interface IPlannerState {
   intervals: string[];
   lookup: Types.ILookup;
   planIds: string[];
-  selectedPlan: Types.IPlan | null;
+  selectedPlan: string | null;
   highlightedPlan: string | null;
 }
 
@@ -113,6 +113,7 @@ export default class Planner extends Component<IPlanner, IPlannerState> {
   private grid: any;
   private spacer: any;
   private coordinates: Types.ICoordinates | null = null;
+  private handlers: any;
 
   constructor(props: IPlanner) {
     super(props);
@@ -178,6 +179,14 @@ export default class Planner extends Component<IPlanner, IPlannerState> {
       planIds: props.plans.map(plan => plan.id),
       selectedPlan: null,
       highlightedPlan: null
+    };
+
+    this.handlers = {
+      deleteNode: this.handleRemoveHighlightedPlan,
+      moveNodeUp: this.handleMoveHighlightedPlan.bind(this.handleMoveHighlightedPlan, UP),
+      moveNodeDown: this.handleMoveHighlightedPlan.bind(this.handleMoveHighlightedPlan, DOWN),
+      moveNodeRight: this.handleMoveHighlightedPlan.bind(this.handleMoveHighlightedPlan, RIGHT),
+      moveNodeLeft: this.handleMoveHighlightedPlan.bind(this.handleMoveHighlightedPlan, LEFT)
     };
   }
 
@@ -303,17 +312,9 @@ export default class Planner extends Component<IPlanner, IPlannerState> {
       style: { overflowY: 'auto' } // TODO: Figure out how we want to handle this stuff
     };
 
-    const handlers = {
-      deleteNode: this.handleRemoveHighlightedPlan,
-      moveNodeUp: this.handleMoveHighlightedPlan.bind(this.handleMoveHighlightedPlan, UP),
-      moveNodeDown: this.handleMoveHighlightedPlan.bind(this.handleMoveHighlightedPlan, DOWN),
-      moveNodeRight: this.handleMoveHighlightedPlan.bind(this.handleMoveHighlightedPlan, RIGHT),
-      moveNodeLeft: this.handleMoveHighlightedPlan.bind(this.handleMoveHighlightedPlan, LEFT)
-    };
-
     return (
       <>
-        <HotKeys handlers={handlers} keyMap={keyMap}>
+        <HotKeys handlers={this.handlers} keyMap={keyMap}>
           <div // eslint-disable-line jsx-a11y/no-static-element-interactions
             onDoubleClick={this.handleAddPlan}
           >
@@ -334,23 +335,37 @@ export default class Planner extends Component<IPlanner, IPlannerState> {
 
   private renderModal(): ReactNode {
     const { selectedPlan } = this.state;
-    const { renderModal } = this.props;
-    if (renderModal && selectedPlan) {
+
+    if (!selectedPlan) {
+      return null;
+    }
+
+    const { renderModal, plans } = this.props;
+    // TODO: not sure how I feel about this yet
+    // also the checks of plan below are kind of pointless
+    const plan = plans.find(p => p.id === selectedPlan);
+
+    if (!plan) {
+      return null;
+    }
+
+    if (renderModal) {
       return renderModal(
-        selectedPlan,
+        plan,
         {
           renderPlanEdit: this.renderPlanEdit,
           onClose: this.handleCloseModal
         },
-        !!selectedPlan
+        true
       );
     }
+
     return (
       <Modal
         contentLabel="Edit Plan"
-        isOpen={!!selectedPlan}
+        isOpen
       >
-        {selectedPlan && this.renderPlanEdit(selectedPlan)}
+        {this.renderPlanEdit(plan)}
       </Modal>
     );
   }
@@ -570,9 +585,7 @@ export default class Planner extends Component<IPlanner, IPlannerState> {
   }
 
   private handleOpenPlan = (id: string) => {
-    const { plans } = this.props;
-    const selectedPlan = plans.find(plan => plan.id === id);
-    this.setState({ selectedPlan: selectedPlan || null });
+    this.setState({ selectedPlan: id });
   }
 
   private handleSelectPlan = (id: string) => {
