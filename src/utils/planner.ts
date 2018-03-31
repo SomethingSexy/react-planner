@@ -66,15 +66,15 @@ export const gridPlans =
   : Types.IGridPlan[] =>
     plans.map(plan => {
       const dateIndex = lookup.byDate[plan.date];
-      const dayTime = lookup.grid[dateIndex][plan.time];
-      const toTime = lookup.grid[dateIndex][plan.toTime];
+      // const dayTime = lookup.grid[dateIndex][plan.time];
+      // const toTime = lookup.grid[dateIndex][plan.toTime];
 
       const height = plan.toTime - plan.time;
 
       return {
         h: height || 1,
         i: plan.id,
-        label: `${dayTime.time} - ${toTime.time}`,
+        // time: `${dayTime.time} - ${toTime.time}`,
         w: 1,
         x: dateIndex + 1,
         y: plan.time + 1,

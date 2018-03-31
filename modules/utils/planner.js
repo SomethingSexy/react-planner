@@ -49,13 +49,13 @@ export const range = (startDate, endDate) => {
 export const gridDays = (days) => days.map((day, index) => ({ day, x: index + 1, y: 0, w: 1, h: 1, static: true, key: uuid.v4() }));
 export const gridPlans = (plans, lookup) => plans.map(plan => {
     const dateIndex = lookup.byDate[plan.date];
-    const dayTime = lookup.grid[dateIndex][plan.time];
-    const toTime = lookup.grid[dateIndex][plan.toTime];
+    // const dayTime = lookup.grid[dateIndex][plan.time];
+    // const toTime = lookup.grid[dateIndex][plan.toTime];
     const height = plan.toTime - plan.time;
     return {
         h: height || 1,
         i: plan.id,
-        label: `${dayTime.time} - ${toTime.time}`,
+        // time: `${dayTime.time} - ${toTime.time}`,
         w: 1,
         x: dateIndex + 1,
         y: plan.time + 1,

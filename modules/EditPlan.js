@@ -1,9 +1,9 @@
 import PropTypes from 'prop-types';
-import React, { PureComponent } from 'react';
+import { PureComponent } from 'react';
 class EditPlan extends PureComponent {
     render() {
         const { onEditPlan, render, plan } = this.props;
-        return (React.createElement("div", null, render ? render(plan, onEditPlan) : null));
+        return render ? render(plan, onEditPlan) : null;
     }
 }
 EditPlan.propTypes = {

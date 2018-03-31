@@ -86,11 +86,22 @@ export default class Planner extends Component {
                 const { lookup } = this.state;
                 const { onUpdatePlans, plans } = this.props;
                 const { x, y } = this.getGrid(event);
+                const defaultTo = this.props.defaultPlanInterval || 0;
+                const toTime = y + defaultTo;
                 const dayTime = lookup.grid[x - 1][y - 1];
+                const rangeToTime = lookup.grid[x - 1][toTime];
                 const id = uuid.v4();
                 // TODO: toTime here is not working, using y here but when we process it we are
                 // using that for height so it is getting borked
-                onUpdatePlans([...plans, { id, date: dayTime.day, time: y - 1, toTime: y }]);
+                onUpdatePlans([
+                    ...plans, {
+                        id,
+                        toTime,
+                        date: dayTime.day,
+                        time: y - 1,
+                        timeRange: `${dayTime.time} - ${rangeToTime.time}`
+                    }
+                ]);
             }
         };
         this.handleMoveHighlightedPlan = (direction) => {
@@ -373,9 +384,10 @@ export default class Planner extends Component {
             React.createElement(Day, { day: day.day })));
     }
     renderPlans() {
-        const { gPlans, highlightedPlan } = this.state;
-        return gPlans.map(plan => (React.createElement("div", { key: plan.i, style: { border: '1px solid #eee' } },
-            React.createElement(Plan, { highlightedPlan: highlightedPlan, plan: plan, onOpenPlan: this.handleOpenPlan, onRemovePlan: this.handleRemovePlan, onSelectPlan: this.handleSelectPlan }))));
+        const { renderPlan, plans } = this.props;
+        const { highlightedPlan } = this.state;
+        return plans.map((plan) => (React.createElement("div", { key: plan.id, style: { border: '1px solid #eee' } },
+            React.createElement(Plan, { highlightedPlan: highlightedPlan, plan: plan, onOpenPlan: this.handleOpenPlan, onRemovePlan: this.handleRemovePlan, onSelectPlan: this.handleSelectPlan, render: renderPlan }))));
     }
     getGrid(event) {
         const coordinates = this.coordinates;
@@ -408,6 +420,7 @@ Planner.propTypes = {
     dateStart: PropTypes.string,
     dateEnd: PropTypes.string,
     days: PropTypes.oneOfType([PropTypes.number]).isRequired,
+    defaultPlanInterval: PropTypes.number,
     end: PropTypes.number,
     interval: PropTypes.oneOf(INTERVALS),
     // for now it will be an array of plans

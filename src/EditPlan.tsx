@@ -1,5 +1,5 @@
 import PropTypes from 'prop-types';
-import React, { PureComponent, ReactNode } from 'react';
+import { PureComponent, ReactNode } from 'react';
 import * as Types from './types';
 
 export interface IEditPlan {
@@ -19,11 +19,7 @@ class EditPlan extends PureComponent<IEditPlan> {
 
   public render(): ReactNode {
     const { onEditPlan, render, plan } = this.props;
-    return (
-      <div>
-        {render ? render(plan, onEditPlan) : null}
-      </div>
-    );
+    return render ? render(plan, onEditPlan) : null;
   }
 }
 

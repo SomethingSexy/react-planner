@@ -12,6 +12,7 @@ export interface IPlan {
   date: string; // valid date
   id: string;
   time: number;
+  timeRange: string;
   toTime: number;
   // stores dynamic plan data
   [key: string]: any;
@@ -46,7 +47,7 @@ export interface IGridDay {
 export interface IGridPlan {
   h: number;
   i: string;
-  label: string;
+  // time: string;
   minW: number;
   maxW: number;
   w: number;
@@ -55,6 +56,8 @@ export interface IGridPlan {
 }
 
 export type RenderPlanEdit = (plan: IPlan, onEditPlan: EditPlan) => ReactNode;
+
+export type RenderPlan = (plan: IPlan) => ReactNode;
 
 export type RenderModal =
   (plan: IPlan, options: {}, isOpen: boolean) => ReactNode;
