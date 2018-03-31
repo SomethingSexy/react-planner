@@ -37,7 +37,7 @@ const Plan: StatelessComponent<IPlan>
         onClick={onSelectPlan.bind(onSelectPlan, plan.id)}
         onDoubleClick={onOpenPlan.bind(onOpenPlan, plan.id)}
       >
-        {render ? render(plan) : null}
+        {render ? render(plan, { expanded: plan.toTime - plan.time > 1 }) : null}
       </div>
     );
   };

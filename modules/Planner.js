@@ -91,8 +91,6 @@ export default class Planner extends Component {
                 const dayTime = lookup.grid[x - 1][y - 1];
                 const rangeToTime = lookup.grid[x - 1][toTime];
                 const id = uuid.v4();
-                // TODO: toTime here is not working, using y here but when we process it we are
-                // using that for height so it is getting borked
                 onUpdatePlans([
                     ...plans, {
                         id,

@@ -13,7 +13,7 @@ const Plan = ({ plan, highlightedPlan, onSelectPlan, onOpenPlan, render }) => {
     if (plan.id === highlightedPlan) {
         localStyle = Object.assign({}, localStyle, { backgroundColor: 'hsl(204, 86%, 53%)', color: 'white' });
     }
-    return (React.createElement("div", { style: localStyle, onClick: onSelectPlan.bind(onSelectPlan, plan.id), onDoubleClick: onOpenPlan.bind(onOpenPlan, plan.id) }, render ? render(plan) : null));
+    return (React.createElement("div", { style: localStyle, onClick: onSelectPlan.bind(onSelectPlan, plan.id), onDoubleClick: onOpenPlan.bind(onOpenPlan, plan.id) }, render ? render(plan, { expanded: plan.toTime - plan.time > 1 }) : null));
 };
 Plan.propTypes = {
     onRemovePlan: PropTypes.func,
