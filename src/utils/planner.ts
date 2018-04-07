@@ -114,7 +114,7 @@ export const canAdd =
       }
       // now check if the end time of the new plan will cross over
       // to an existing plan
-      return plan.time === toTime;
+      return toTime > plan.time && toTime <= plan.toTime;
     });
 
     // check if this would collide with another plan, if so lower the interval to fit

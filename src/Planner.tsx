@@ -20,6 +20,7 @@ import * as Types from './types';
 import elementFromPoint from './utils/elementFromPoint.js';
 import {
   calculateIntervals,
+  canAdd,
   createLookupTables,
   getPlansByDate,
   gridDays,
@@ -321,9 +322,7 @@ export default class Planner extends Component<IPlanner, IPlannerState> {
     return (
       <>
         <HotKeys handlers={this.handlers} keyMap={keyMap}>
-          <div // eslint-disable-line jsx-a11y/no-static-element-interactions
-            onDoubleClick={this.handleAddPlan}
-          >
+          <div onDoubleClick={this.handleAddPlan}>
             <WidthReactGridLayout
               {...rglProps}
             >
@@ -331,11 +330,6 @@ export default class Planner extends Component<IPlanner, IPlannerState> {
               {this.renderTimes()}
               {this.renderDays()}
               {this.renderPlans()}
-              <div data-grid={{ static: true, x: 1, y: 37, w: 1, h: 1 }} key="foo">
-                Test
-              </div>
-              <div data-grid={{ static: true, x: 2, y: 37, w: 1, h: 1 }} key="bar">
-                Test</div>
             </WidthReactGridLayout>
           </div>
         </HotKeys>
@@ -521,7 +515,7 @@ export default class Planner extends Component<IPlanner, IPlannerState> {
       // TODO: Call isValidMove here
       // TODO: If we are trying to add a plan where the from and to time is larger
       // than the space, convert it to the lowest interval
-      if (dayTime && rangeToTime) {
+      if (canAdd(x, y, defaultTo, lookup, plans)) {
         const id = uuid.v4();
 
         onUpdatePlans([

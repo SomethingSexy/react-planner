@@ -10,7 +10,7 @@ describe('utils - planner', () => {
       '02/02/2018',
       '02/03/2018'
     ];
-    const intervals = ['6:30', '7:00', '7:30', '8:00'];
+    const intervals = ['6:30', '7:00', '7:30', '8:00', '8:30', '9:00', '9:30', '10:00', '10:30'];
     const lookupTable = createLookupTables(days, intervals);
 
     it('should indicate it can add', () => {
@@ -36,6 +36,15 @@ describe('utils - planner', () => {
       ];
       // trying to add a plan that takes 2 time intervals but it would collide
       const output = canAdd(1, 1, 1, lookupTable, plans);
+      expect(output).to.equal(true);
+    });
+
+    it('should indicate it cannot add because of collision between another plan', () => {
+      const plans = [
+        { id: '1', date: '02/01/2018', time: 5, toTime: 7, label: 'Fun', timeRange: '' },
+      ];
+      // trying to add a plan that takes 2 time intervals but it would collide
+      const output = canAdd(1, 5, 1, lookupTable, plans);
       expect(output).to.equal(false);
     });
 
@@ -47,6 +56,15 @@ describe('utils - planner', () => {
       ];
       // trying to add a plan to the first day
       const output = canAdd(1, 2, 0, lookupTable, plans);
+      expect(output).to.equal(true);
+    });
+  
+    it('should indicate it can add because of no collision at the edge of another', () => {
+      const plans = [
+        { id: '1', date: '02/01/2018', time: 2, toTime: 4, label: 'Fun', timeRange: '' }
+      ];
+      // trying to add a plan to the first day
+      const output = canAdd(1, 1, 1, lookupTable, plans);
       expect(output).to.equal(true);
     });
   });

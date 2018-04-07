@@ -17,7 +17,7 @@ import EditPlan from './EditPlan.js';
 import Plan from './Plan.js';
 import Time from './Time.js';
 import elementFromPoint from './utils/elementFromPoint.js';
-import { calculateIntervals, createLookupTables, gridDays, gridPlans, gridTimes, range, } from './utils/planner';
+import { calculateIntervals, canAdd, createLookupTables, getPlansByDate, gridDays, gridPlans, gridTimes, range } from './utils/planner';
 const WidthReactGridLayout = WidthProvider(ReactGridLayout);
 // const validIntervals = [1, 5, 15, 30, 60];
 const intervalMatch = /(\d+)(m|h)+/;
@@ -94,7 +94,7 @@ export default class Planner extends Component {
                 // TODO: Call isValidMove here
                 // TODO: If we are trying to add a plan where the from and to time is larger
                 // than the space, convert it to the lowest interval
-                if (dayTime && rangeToTime) {
+                if (canAdd(x, y, defaultTo, lookup, plans)) {
                     const id = uuid.v4();
                     onUpdatePlans([
                         ...plans, {
@@ -117,9 +117,7 @@ export default class Planner extends Component {
                     // find the highlighted plan
                     // find all of the plans with the same date
                     // find the plan previous
-                    const times = plans
-                        .filter(plan => plan.date === planToMove.date)
-                        .sort((a, b) => a.time - b.time);
+                    const times = getPlansByDate(plans, planToMove.date);
                     const toMoveIndex = times.findIndex(plan => plan.id === planToMove.id);
                     const moveTo = times[direction === UP ? toMoveIndex - 1 : toMoveIndex + 1];
                     if (moveTo) {
@@ -143,9 +141,7 @@ export default class Planner extends Component {
                     const moveToDate = dates[direction === LEFT ? toMoveIndex - 1 : toMoveIndex + 1];
                     if (moveToDate) {
                         // now find the time we should move to
-                        const sorted = plans
-                            .filter(plan => plan.date === moveToDate)
-                            .sort((a, b) => a.time - b.time);
+                        const sorted = getPlansByDate(plans, moveToDate);
                         const sameTime = sorted.find(plan => plan.time === planToMove.time);
                         const moveTo = sameTime ? sameTime : sorted[0];
                         if (moveTo) {
@@ -356,9 +352,7 @@ export default class Planner extends Component {
                         React.createElement("div", { "data-grid": spacer, key: "spacer", ref: ref => { this.spacer = ref; } }),
                         this.renderTimes(),
                         this.renderDays(),
-                        this.renderPlans(),
-                        React.createElement("div", { "data-grid": { static: true, x: 1, y: 37, w: 1, h: 1 }, key: "foo" }, "Test"),
-                        React.createElement("div", { "data-grid": { static: true, x: 2, y: 37, w: 1, h: 1 }, key: "bar" }, "Test")))),
+                        this.renderPlans()))),
             this.renderModal()));
     }
     renderModal() {
@@ -410,6 +404,9 @@ export default class Planner extends Component {
         // adding 10 to account for the transformation margin between grid points
         const y = Math.floor(yWithin / (coordinates.height + 10));
         const x = Math.floor(xWithin / (coordinates.width + 10));
+        // TODO: Might make more sense to adjust the coordinates here and then
+        // everything else can work on the root grid, so 1,1 would === 0,0
+        // then we wouldn't need to adjust everywhere else
         return { x, y };
     }
     isValidMove(plan) {

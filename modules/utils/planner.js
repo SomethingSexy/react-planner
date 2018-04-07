@@ -63,21 +63,35 @@ export const gridPlans = (plans, lookup) => plans.map(plan => {
         maxW: 1
     };
 });
+export const getPlansByDate = (plans, date) => plans
+    .filter(plan => plan.date === date)
+    .sort((a, b) => a.time - b.time);
 /**
  * @param {number} x - x coordinate of the plan we want to add, 1 is the start.
  * @param {number} y - y coordinate of the plan we want to add, 1 is the start.
  * @param {number} number - count of time ranges for this plan.
  */
-export const canAdd = (x, y, interval, lookup) => {
+export const canAdd = (x, y, interval, lookup, plans) => {
     const toTime = y + interval;
     const start = lookup.grid[x - 1][y - 1];
     const to = lookup.grid[x - 1][toTime];
-    if (!start) {
+    if (!start || !to) {
         return false;
     }
-    if (!to) {
-        return false;
-    }
-    return true;
+    // grab the plans for this date, sorted by time
+    const datePlans = getPlansByDate(plans, start.day);
+    const collision = datePlans.find(plan => {
+        // need to check if the plan crosses any other plan.
+        // if they start at the same time
+        if (plan.time === (y - 1)) {
+            return true;
+        }
+        // now check if the end time of the new plan will cross over
+        // to an existing plan
+        return toTime > plan.time && toTime <= plan.toTime;
+    });
+    // check if this would collide with another plan, if so lower the interval to fit
+    // in the available space
+    return !collision;
 };
 //# sourceMappingURL=planner.js.map
