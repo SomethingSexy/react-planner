@@ -21,10 +21,11 @@ import elementFromPoint from './utils/elementFromPoint.js';
 import {
   calculateIntervals,
   createLookupTables,
+  getPlansByDate,
   gridDays,
   gridPlans,
   gridTimes,
-  range,
+  range
 } from './utils/planner';
 
 const WidthReactGridLayout = WidthProvider(ReactGridLayout);
@@ -301,17 +302,19 @@ export default class Planner extends Component<IPlanner, IPlannerState> {
   }
 
   public render() {
-    const { gPlans, days } = this.state;
+    const { gPlans, days, intervals } = this.state;
 
     // Setting it up this way because d.ts is not correct for rgl
     const rglProps: any = {
       className: 'layout',
       cols: days.length + 1,
       layout: gPlans,
+      maxRows: intervals.length + 1,
       onLayoutChange: this.handleLayoutChange,
       ref: (ref: any) => { this.grid = ref; },
       rowHeight: 30,
       compactType: null,
+      preventCollision: true,
       style: { overflowY: 'auto' } // TODO: Figure out how we want to handle this stuff
     };
 
@@ -328,6 +331,11 @@ export default class Planner extends Component<IPlanner, IPlannerState> {
               {this.renderTimes()}
               {this.renderDays()}
               {this.renderPlans()}
+              <div data-grid={{ static: true, x: 1, y: 37, w: 1, h: 1 }} key="foo">
+                Test
+              </div>
+              <div data-grid={{ static: true, x: 2, y: 37, w: 1, h: 1 }} key="bar">
+                Test</div>
             </WidthReactGridLayout>
           </div>
         </HotKeys>
@@ -432,6 +440,9 @@ export default class Planner extends Component<IPlanner, IPlannerState> {
     const y = Math.floor(yWithin / (coordinates.height + 10));
     const x = Math.floor(xWithin / (coordinates.width + 10));
 
+    // TODO: Might make more sense to adjust the coordinates here and then
+    // everything else can work on the root grid, so 1,1 would === 0,0
+    // then we wouldn't need to adjust everywhere else
     return { x, y };
   }
 
@@ -472,16 +483,18 @@ export default class Planner extends Component<IPlanner, IPlannerState> {
 
     // if something has changed, then lets update the grid plans
     if (changed.length) {
+      console.log(changed); // tslint:disable-line
       const updatedPlans = plans.map(plan => {
         const nextPlan = changed.find((c: { i: string}) => c.i === plan.id);
         if (nextPlan && this.isValidMove(nextPlan)) {
-          // const dayTime = lookup.grid[nextPlan.x - 1][nextPlan.y - 1];
-          // const toTime = lookup.grid[nextPlan.x - 1][(nextPlan.y - 1) + (nextPlan.h - 1) + 1];
+          const dayTime = lookup.grid[nextPlan.x - 1][nextPlan.y - 1];
+          const toTime = lookup.grid[nextPlan.x - 1][(nextPlan.y - 1) + (nextPlan.h - 1) + 1];
           return {
             ...plan,
             date: lookup.grid[nextPlan.x - 1][nextPlan.y - 1].day,
             time: nextPlan.y - 1,
-            toTime: (nextPlan.y - 1) + (nextPlan.h - 1) + 1
+            toTime: (nextPlan.y - 1) + (nextPlan.h - 1) + 1,
+            timeRange: `${dayTime.time} - ${toTime.time}`
           };
         }
 
@@ -505,17 +518,22 @@ export default class Planner extends Component<IPlanner, IPlannerState> {
       const dayTime = lookup.grid[x - 1][y - 1];
       const rangeToTime = lookup.grid[x - 1][toTime];
 
-      const id = uuid.v4();
+      // TODO: Call isValidMove here
+      // TODO: If we are trying to add a plan where the from and to time is larger
+      // than the space, convert it to the lowest interval
+      if (dayTime && rangeToTime) {
+        const id = uuid.v4();
 
-      onUpdatePlans([
-        ...plans, {
-          id,
-          toTime,
-          date: dayTime.day,
-          time: y - 1,
-          timeRange: `${dayTime.time} - ${rangeToTime.time}`
-        }
-      ]);
+        onUpdatePlans([
+          ...plans, {
+            id,
+            toTime,
+            date: dayTime.day,
+            time: y - 1,
+            timeRange: `${dayTime.time} - ${rangeToTime.time}`
+          }
+        ]);
+      }
     }
   }
 
@@ -529,10 +547,7 @@ export default class Planner extends Component<IPlanner, IPlannerState> {
         // find the highlighted plan
         // find all of the plans with the same date
         // find the plan previous
-        const times = plans
-          .filter(plan => plan.date === planToMove.date)
-          .sort((a, b) => a.time - b.time);
-
+        const times = getPlansByDate(plans, planToMove.date);
         const toMoveIndex = times.findIndex(plan => plan.id === planToMove.id);
         const moveTo = times[direction === UP ? toMoveIndex - 1 : toMoveIndex + 1];
 
@@ -562,10 +577,7 @@ export default class Planner extends Component<IPlanner, IPlannerState> {
 
         if (moveToDate) {
           // now find the time we should move to
-          const sorted = plans
-            .filter(plan => plan.date === moveToDate)
-            .sort((a, b) => a.time - b.time);
-
+          const sorted = getPlansByDate(plans, moveToDate);
           const sameTime = sorted.find(plan => plan.time === planToMove.time);
           const moveTo = sameTime ? sameTime : sorted[0];
 

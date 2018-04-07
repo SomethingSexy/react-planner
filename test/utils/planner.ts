@@ -1,9 +1,56 @@
 import { expect } from 'chai';
 import 'mocha';
 import * as Types from '../../src/types';
-import { createLookupTables, gridPlans, range } from '../../src/utils/planner';
+import { canAdd, createLookupTables, gridPlans, range } from '../../src/utils/planner';
 
 describe('utils - planner', () => {
+  describe('canAdd', () => {
+    const days = [
+      '02/01/2018',
+      '02/02/2018',
+      '02/03/2018'
+    ];
+    const intervals = ['6:30', '7:00', '7:30', '8:00'];
+    const lookupTable = createLookupTables(days, intervals);
+
+    it('should indicate it can add', () => {
+      const plans = [];
+      const output = canAdd(1, 1, 0, lookupTable, plans);
+      expect(output).to.equal(true);
+    });
+
+    it('should indicate it cannot add because of collision', () => {
+      const plans = [
+        { id: '1', date: '02/01/2018', time: 0, toTime: 1, label: 'Fun', timeRange: '' },
+        { id: '2', date: '02/02/2018', time: 0, toTime: 1, label: 'Fun', timeRange: '' },
+        { id: '3', date: '02/03/2018', time: 0, toTime: 1, label: 'Fun', timeRange: '' }
+      ];
+      // trying to add a plan to the first day
+      const output = canAdd(1, 1, 0, lookupTable, plans);
+      expect(output).to.equal(false);
+    });
+
+    it('should indicate it cannot add because of collision with interval', () => {
+      const plans = [
+        { id: '1', date: '02/01/2018', time: 2, toTime: 3, label: 'Fun', timeRange: '' },
+      ];
+      // trying to add a plan that takes 2 time intervals but it would collide
+      const output = canAdd(1, 1, 1, lookupTable, plans);
+      expect(output).to.equal(false);
+    });
+
+    it('should indicate it can add because of no collision', () => {
+      const plans = [
+        { id: '1', date: '02/01/2018', time: 0, toTime: 1, label: 'Fun', timeRange: '' },
+        { id: '2', date: '02/02/2018', time: 0, toTime: 1, label: 'Fun', timeRange: '' },
+        { id: '3', date: '02/03/2018', time: 0, toTime: 1, label: 'Fun', timeRange: '' }
+      ];
+      // trying to add a plan to the first day
+      const output = canAdd(1, 2, 0, lookupTable, plans);
+      expect(output).to.equal(true);
+    });
+  });
+
   describe('range', () => {
     it('should return a valid range of dates with a start and end', () => {
       const output = range('02/01/2018', '02/10/2018');
@@ -59,9 +106,9 @@ describe('utils - planner', () => {
 
       // this will allow us to then look up information for the grid
       expect(output.grid).to.deep.equal([
-        [{ time: '6:30', day: 'Day 02/01/2018' }, { time: '7:00', day: 'Day 02/01/2018' }],
-        [{ time: '6:30', day: 'Day 02/02/2018' }, { time: '7:00', day: 'Day 02/02/2018' }],
-        [{ time: '6:30', day: 'Day 02/03/2018' }, { time: '7:00', day: 'Day 02/03/2018' }]
+        [{ time: '6:30', day: '02/01/2018' }, { time: '7:00', day: '02/01/2018' }],
+        [{ time: '6:30', day: '02/02/2018' }, { time: '7:00', day: '02/02/2018' }],
+        [{ time: '6:30', day: '02/03/2018' }, { time: '7:00', day: '02/03/2018' }]
       ]);
     });
   });
@@ -69,9 +116,9 @@ describe('utils - planner', () => {
   describe('gridPlans', () => {
     it('should return the plans in grid form', () => {
       const plans = [
-        { id: '1', date: '02/01/2018', time: 0, label: 'Fun' },
-        { id: '2', date: '02/02/2018', time: 0, label: 'Fun' },
-        { id: '3', date: '02/03/2018', time: 0, label: 'Fun' }
+        { id: '1', date: '02/01/2018', time: 0, toTime: 1, label: 'Fun', timeRange: '' },
+        { id: '2', date: '02/02/2018', time: 0, toTime: 1, label: 'Fun', timeRange: '' },
+        { id: '3', date: '02/03/2018', time: 0, toTime: 1, label: 'Fun', timeRange: '' }
       ];
       const days = [
         '02/01/2018',
@@ -87,16 +134,6 @@ describe('utils - planner', () => {
       expect(output).to.deep.equal([{
         h: 1,
         i: '1',
-        label: 'Day 02/01/2018: 6:30 - 7:00',
-        w: 1,
-        x: 0,
-        y: 1,
-        minW: 1,
-        maxW: 1
-      }, {
-        h: 1,
-        i: '2',
-        label: 'Day 02/02/2018: 6:30 - 7:00',
         w: 1,
         x: 1,
         y: 1,
@@ -104,10 +141,17 @@ describe('utils - planner', () => {
         maxW: 1
       }, {
         h: 1,
-        i: '3',
-        label: 'Day 02/03/2018: 6:30 - 7:00',
+        i: '2',
         w: 1,
         x: 2,
+        y: 1,
+        minW: 1,
+        maxW: 1
+      }, {
+        h: 1,
+        i: '3',
+        w: 1,
+        x: 3,
         y: 1,
         minW: 1,
         maxW: 1

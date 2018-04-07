@@ -67,12 +67,13 @@ export default class Planner extends Component {
             });
             // if something has changed, then lets update the grid plans
             if (changed.length) {
+                console.log(changed); // tslint:disable-line
                 const updatedPlans = plans.map(plan => {
                     const nextPlan = changed.find((c) => c.i === plan.id);
                     if (nextPlan && this.isValidMove(nextPlan)) {
-                        // const dayTime = lookup.grid[nextPlan.x - 1][nextPlan.y - 1];
-                        // const toTime = lookup.grid[nextPlan.x - 1][(nextPlan.y - 1) + (nextPlan.h - 1) + 1];
-                        return Object.assign({}, plan, { date: lookup.grid[nextPlan.x - 1][nextPlan.y - 1].day, time: nextPlan.y - 1, toTime: (nextPlan.y - 1) + (nextPlan.h - 1) + 1 });
+                        const dayTime = lookup.grid[nextPlan.x - 1][nextPlan.y - 1];
+                        const toTime = lookup.grid[nextPlan.x - 1][(nextPlan.y - 1) + (nextPlan.h - 1) + 1];
+                        return Object.assign({}, plan, { date: lookup.grid[nextPlan.x - 1][nextPlan.y - 1].day, time: nextPlan.y - 1, toTime: (nextPlan.y - 1) + (nextPlan.h - 1) + 1, timeRange: `${dayTime.time} - ${toTime.time}` });
                     }
                     return plan;
                 });
@@ -90,16 +91,21 @@ export default class Planner extends Component {
                 const toTime = y + defaultTo;
                 const dayTime = lookup.grid[x - 1][y - 1];
                 const rangeToTime = lookup.grid[x - 1][toTime];
-                const id = uuid.v4();
-                onUpdatePlans([
-                    ...plans, {
-                        id,
-                        toTime,
-                        date: dayTime.day,
-                        time: y - 1,
-                        timeRange: `${dayTime.time} - ${rangeToTime.time}`
-                    }
-                ]);
+                // TODO: Call isValidMove here
+                // TODO: If we are trying to add a plan where the from and to time is larger
+                // than the space, convert it to the lowest interval
+                if (dayTime && rangeToTime) {
+                    const id = uuid.v4();
+                    onUpdatePlans([
+                        ...plans, {
+                            id,
+                            toTime,
+                            date: dayTime.day,
+                            time: y - 1,
+                            timeRange: `${dayTime.time} - ${rangeToTime.time}`
+                        }
+                    ]);
+                }
             }
         };
         this.handleMoveHighlightedPlan = (direction) => {
@@ -329,16 +335,18 @@ export default class Planner extends Component {
         document.removeEventListener('keydown', this.handleCloseModal);
     }
     render() {
-        const { gPlans, days } = this.state;
+        const { gPlans, days, intervals } = this.state;
         // Setting it up this way because d.ts is not correct for rgl
         const rglProps = {
             className: 'layout',
             cols: days.length + 1,
             layout: gPlans,
+            maxRows: intervals.length + 1,
             onLayoutChange: this.handleLayoutChange,
             ref: (ref) => { this.grid = ref; },
             rowHeight: 30,
             compactType: null,
+            preventCollision: true,
             style: { overflowY: 'auto' } // TODO: Figure out how we want to handle this stuff
         };
         return (React.createElement(React.Fragment, null,
@@ -348,7 +356,9 @@ export default class Planner extends Component {
                         React.createElement("div", { "data-grid": spacer, key: "spacer", ref: ref => { this.spacer = ref; } }),
                         this.renderTimes(),
                         this.renderDays(),
-                        this.renderPlans()))),
+                        this.renderPlans(),
+                        React.createElement("div", { "data-grid": { static: true, x: 1, y: 37, w: 1, h: 1 }, key: "foo" }, "Test"),
+                        React.createElement("div", { "data-grid": { static: true, x: 2, y: 37, w: 1, h: 1 }, key: "bar" }, "Test")))),
             this.renderModal()));
     }
     renderModal() {

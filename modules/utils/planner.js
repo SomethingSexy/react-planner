@@ -63,4 +63,21 @@ export const gridPlans = (plans, lookup) => plans.map(plan => {
         maxW: 1
     };
 });
+/**
+ * @param {number} x - x coordinate of the plan we want to add, 1 is the start.
+ * @param {number} y - y coordinate of the plan we want to add, 1 is the start.
+ * @param {number} number - count of time ranges for this plan.
+ */
+export const canAdd = (x, y, interval, lookup) => {
+    const toTime = y + interval;
+    const start = lookup.grid[x - 1][y - 1];
+    const to = lookup.grid[x - 1][toTime];
+    if (!start) {
+        return false;
+    }
+    if (!to) {
+        return false;
+    }
+    return true;
+};
 //# sourceMappingURL=planner.js.map
