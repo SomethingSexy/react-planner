@@ -88,36 +88,72 @@ export const getPlansByDate = (plans: Types.IPlan[], date: string) =>
     .filter(plan => plan.date === date)
     .sort((a, b) => a.time - b.time);
 
+const collided = (y: number, interval: number, plans: Types.IPlan[]) =>
+  !!plans.find(plan => {
+    // need to check if the plan crosses any other plan.
+    // if they start at the same time
+    if (plan.time === (y - 1)) {
+      return true;
+    }
+    // now check if the end time of the new plan will cross over
+    // to an existing plan
+    return (y + interval) > plan.time && (y + interval) <= plan.toTime;
+  });
+
+export const isValidTime = (x: number, y: number, lookup: Types.ILookup) => {
+  return !!lookup.grid[x][y];
+};
+
 /**
  * @param {number} x - x coordinate of the plan we want to add, 1 is the start.
  * @param {number} y - y coordinate of the plan we want to add, 1 is the start.
  * @param {number} number - count of time ranges for this plan.
+ * @param {ILookup} lookup
+ * @param {IPlan[]} plans
+ *
+ * @returns {object|boolean} - false if it cannot add or information about how to add
  */
 export const canAdd =
   (x: number, y: number, interval: number, lookup: Types.ILookup, plans: Types.IPlan[]) => {
-    const toTime = y + interval;
-    const start = lookup.grid[x - 1][y - 1];
-    const to = lookup.grid[x - 1][toTime];
+    const dateLookup = x - 1;
+    const stateTimeLookup = y - 1;
+    const toTimeLookup = y + interval;
+    const start = lookup.grid[dateLookup][stateTimeLookup];
+    let to = lookup.grid[dateLookup][toTimeLookup];
 
-    if (!start || !to) {
+    if (!isValidTime(dateLookup, stateTimeLookup, lookup)
+      || !isValidTime(dateLookup, toTimeLookup, lookup)) {
       return false;
     }
 
+    const date = lookup.grid[dateLookup][stateTimeLookup];
     // grab the plans for this date, sorted by time
-    const datePlans = getPlansByDate(plans, start.day);
+    const datePlans = getPlansByDate(plans, date.day);
 
-    const collision = datePlans.find(plan => {
-      // need to check if the plan crosses any other plan.
-      // if they start at the same time
-      if (plan.time === (y - 1)) {
-        return true;
-      }
-      // now check if the end time of the new plan will cross over
-      // to an existing plan
-      return toTime > plan.time && toTime <= plan.toTime;
-    });
+    // check if this would collide with another plan
+    let collision = collided(y, interval, datePlans);
 
-    // check if this would collide with another plan, if so lower the interval to fit
-    // in the available space
-    return !collision;
+    if (!collision) {
+      return { start, to, toTime: toTimeLookup, startTime: stateTimeLookup };
+    }
+
+    // if we still cannot add but the interval is 0, then return false
+    if (interval === 0) {
+      return false;
+    }
+
+    // if we can't add, see if lowering the interval would allow it to add
+    // lower to fit until we cannot anymore
+    let intCheck = interval;
+    while (intCheck >= 0 && collision) {
+      intCheck = intCheck - 1;
+      collision = collided(y, intCheck, datePlans);
+    }
+
+    if (collision) {
+      return false;
+    }
+
+    to = lookup.grid[dateLookup][y + intCheck];
+    return { start, to, toTime: y + intCheck, startTime: stateTimeLookup };
   };

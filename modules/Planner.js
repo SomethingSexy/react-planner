@@ -88,21 +88,17 @@ export default class Planner extends Component {
                 const { onUpdatePlans, plans } = this.props;
                 const { x, y } = this.getGrid(event);
                 const defaultTo = this.props.defaultPlanInterval || 0;
-                const toTime = y + defaultTo;
-                const dayTime = lookup.grid[x - 1][y - 1];
-                const rangeToTime = lookup.grid[x - 1][toTime];
-                // TODO: Call isValidMove here
-                // TODO: If we are trying to add a plan where the from and to time is larger
-                // than the space, convert it to the lowest interval
-                if (canAdd(x, y, defaultTo, lookup, plans)) {
+                const isValidAdd = canAdd(x, y, defaultTo, lookup, plans);
+                if (isValidAdd) {
+                    const { start, to, toTime, startTime } = isValidAdd;
                     const id = uuid.v4();
                     onUpdatePlans([
                         ...plans, {
                             id,
                             toTime,
-                            date: dayTime.day,
-                            time: y - 1,
-                            timeRange: `${dayTime.time} - ${rangeToTime.time}`
+                            date: start.day,
+                            time: startTime,
+                            timeRange: `${start.time} - ${to.time}`
                         }
                     ]);
                 }
