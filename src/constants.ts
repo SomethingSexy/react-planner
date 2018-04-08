@@ -9,3 +9,8 @@ export const DAYS = {
 };
 
 export const INTERVALS = ['1m', '5m', '15m', '30m', '60m'];
+
+export const UP = 'up';
+export const DOWN = 'down';
+export const RIGHT = 'right';
+export const LEFT = 'left';

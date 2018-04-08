@@ -1,5 +1,7 @@
+import { uniq } from 'lodash';
 import * as moment from 'moment';
 import uuid from 'uuid';
+import { DOWN, LEFT, RIGHT, UP } from '../constants.js';
 import * as Types from '../types';
 
 const MINUTES = 60;
@@ -157,3 +159,52 @@ export const canAdd =
     to = lookup.grid[dateLookup][y + intCheck];
     return { start, to, toTime: y + intCheck, startTime: stateTimeLookup };
   };
+
+export const getClosestPlan = (id: string, plans: Types.IPlan[], direction?: string) => {
+  const planToMove = plans.find(plan => plan.id === id);
+  if (planToMove && (direction === UP || direction === DOWN)) {
+    // find the highlighted plan
+    // find all of the plans with the same date
+    // find the plan previous
+    const times = getPlansByDate(plans, planToMove.date);
+    const toMoveIndex = times.findIndex(plan => plan.id === planToMove.id);
+    const moveTo = times[direction === UP ? toMoveIndex - 1 : toMoveIndex + 1];
+
+    if (moveTo) {
+      return moveTo.id;
+      // this.setState({ highlightedPlan: moveTo.id });
+    }
+  } else if (planToMove && (direction === RIGHT || direction === LEFT)) {
+    // for left and right we need to get next and prev column
+    const dates = uniq(
+      plans
+        .map(plan => plan.date)
+        .sort((a, b) => {
+          if (a < b) {
+            return -1;
+          }
+
+          if (b < a) {
+            return 1;
+          }
+
+          return 0;
+        })
+      );
+
+    const toMoveIndex = dates.indexOf(planToMove.date);
+    const moveToDate = dates[direction === LEFT ? toMoveIndex - 1 : toMoveIndex + 1];
+
+    if (moveToDate) {
+      // now find the time we should move to
+      const sorted = getPlansByDate(plans, moveToDate);
+      const sameTime = sorted.find(plan => plan.time === planToMove.time);
+      const moveTo = sameTime ? sameTime : sorted[0];
+
+      if (moveTo) {
+        return moveTo.id;
+        // this.setState({ highlightedPlan: moveTo.id });
+      }
+    }
+  }
+};

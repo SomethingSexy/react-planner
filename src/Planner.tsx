@@ -1,6 +1,6 @@
 /* global window, document */
 import invariant from 'invariant';
-import { isEqual, uniq } from 'lodash';
+import { isEqual } from 'lodash';
 import * as moment from 'moment';
 import PropTypes from 'prop-types';
 import React, { Component, ReactNode } from 'react';
@@ -11,7 +11,7 @@ import 'react-grid-layout/css/styles.css';  // tslint:disable-line
 import Modal from 'react-modal';
 import 'react-resizable/css/styles.css';  // tslint:disable-line
 import uuid from 'uuid';
-import { INTERVALS } from './constants.js';
+import { DOWN, INTERVALS, LEFT, RIGHT, UP } from './constants.js';
 import Day from './Day.js';
 import EditPlan from './EditPlan.js';
 import Plan from './Plan.js';
@@ -22,7 +22,7 @@ import {
   calculateIntervals,
   canAdd,
   createLookupTables,
-  getPlansByDate,
+  getClosestPlan,
   gridDays,
   gridPlans,
   gridTimes,
@@ -34,11 +34,6 @@ const WidthReactGridLayout = WidthProvider(ReactGridLayout);
 // const validIntervals = [1, 5, 15, 30, 60];
 const intervalMatch = /(\d+)(m|h)+/;
 const spacer = { x: 0, y: 0, w: 1, h: 1, static: true };
-
-const UP = 'up';
-const DOWN = 'down';
-const RIGHT = 'right';
-const LEFT = 'left';
 
 const keyMap = {
   deleteNode: ['del', 'backspace'],
@@ -282,8 +277,6 @@ export default class Planner extends Component<IPlanner, IPlannerState> {
     // Get the width and height of a single box at the time
     // to use that to calculate rough grids
     const grid = findDOMNode(this.grid).getBoundingClientRect();
-    // tslint:disable-next-line
-    // console.log(window.pageXOffset, window.pageYOffset, window.pageYOffset + grid.top, window.pageXOffset + grid.left);
     const element = findDOMNode(this.spacer).getBoundingClientRect();
     // grab the width and height to be able to calculate click positions
     const { width, height } = element;
@@ -458,7 +451,6 @@ export default class Planner extends Component<IPlanner, IPlannerState> {
   }
 
   private handleLayoutChange = (layout: any) => {
-    console.log('layout change'); // tslint:disable-line
     const { gPlans, lookup, planIds } = this.state;
     const { plans, onUpdatePlans } = this.props;
     // grab the plans
@@ -477,7 +469,6 @@ export default class Planner extends Component<IPlanner, IPlannerState> {
 
     // if something has changed, then lets update the grid plans
     if (changed.length) {
-      console.log(changed); // tslint:disable-line
       const updatedPlans = plans.map(plan => {
         const nextPlan = changed.find((c: { i: string}) => c.i === plan.id);
         if (nextPlan && this.isValidMove(nextPlan)) {
@@ -532,49 +523,10 @@ export default class Planner extends Component<IPlanner, IPlannerState> {
     const { plans } = this.props;
 
     if (highlightedPlan) {
-      const planToMove = plans.find(plan => plan.id === highlightedPlan);
-      if (planToMove && (direction === UP || direction === DOWN)) {
-        // find the highlighted plan
-        // find all of the plans with the same date
-        // find the plan previous
-        const times = getPlansByDate(plans, planToMove.date);
-        const toMoveIndex = times.findIndex(plan => plan.id === planToMove.id);
-        const moveTo = times[direction === UP ? toMoveIndex - 1 : toMoveIndex + 1];
+      const moveTo = getClosestPlan(highlightedPlan, plans, direction);
 
-        if (moveTo) {
-          this.setState({ highlightedPlan: moveTo.id });
-        }
-      } else if (planToMove && (direction === RIGHT || direction === LEFT)) {
-        // for left and right we need to get next and prev column
-        const dates = uniq(
-          plans
-            .map(plan => plan.date)
-            .sort((a, b) => {
-              if (a < b) {
-                return -1;
-              }
-
-              if (b < a) {
-                return 1;
-              }
-
-              return 0;
-            })
-          );
-
-        const toMoveIndex = dates.indexOf(planToMove.date);
-        const moveToDate = dates[direction === LEFT ? toMoveIndex - 1 : toMoveIndex + 1];
-
-        if (moveToDate) {
-          // now find the time we should move to
-          const sorted = getPlansByDate(plans, moveToDate);
-          const sameTime = sorted.find(plan => plan.time === planToMove.time);
-          const moveTo = sameTime ? sameTime : sorted[0];
-
-          if (moveTo) {
-            this.setState({ highlightedPlan: moveTo.id });
-          }
-        }
+      if (moveTo) {
+        this.setState({ highlightedPlan: moveTo });
       }
     }
   }
