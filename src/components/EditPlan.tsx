@@ -1,6 +1,6 @@
 import PropTypes from 'prop-types';
 import { PureComponent, ReactNode } from 'react';
-import * as Types from './types';
+import * as Types from '../types';
 
 export interface IEditPlan {
   children?: Types.RenderPlanEdit;

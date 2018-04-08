@@ -11,11 +11,11 @@ import 'react-grid-layout/css/styles.css';  // tslint:disable-line
 import Modal from 'react-modal';
 import 'react-resizable/css/styles.css';  // tslint:disable-line
 import uuid from 'uuid';
-import { DOWN, INTERVALS, LEFT, RIGHT, UP } from './constants.js';
-import Day from './Day.js';
-import EditPlan from './EditPlan.js';
-import Plan from './Plan.js';
-import Time from './Time.js';
+import Day from './components/Day';
+import EditPlan from './components/EditPlan';
+import Plan from './components/Plan';
+import Time from './components/Time';
+import { DOWN, INTERVALS, LEFT, RIGHT, UP } from './constants';
 import * as Types from './types';
 import elementFromPoint from './utils/elementFromPoint.js';
 import {

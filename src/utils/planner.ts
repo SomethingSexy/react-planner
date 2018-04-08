@@ -1,7 +1,7 @@
 import { uniq } from 'lodash';
 import * as moment from 'moment';
 import uuid from 'uuid';
-import { DOWN, LEFT, RIGHT, UP } from '../constants.js';
+import { DOWN, LEFT, RIGHT, UP } from '../constants';
 import * as Types from '../types';
 
 const MINUTES = 60;

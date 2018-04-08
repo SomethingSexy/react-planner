@@ -1,6 +1,6 @@
 import PropTypes from 'prop-types';
 import React, { StatelessComponent } from 'react';
-import * as Types from './types';
+import * as Types from '../types';
 
 export interface IPlan {
   highlightedPlan: string | null | undefined;
