@@ -20,6 +20,10 @@ const style = {
   cursor: 'pointer'
 };
 
+/**
+ * @deprecated
+ * @param param0
+ */
 const Plan: StatelessComponent<IPlan>
   = ({ plan, highlightedPlan, onSelectPlan, onOpenPlan, render }) => {
     let localStyle = style;

@@ -4,6 +4,10 @@ import React, { StatelessComponent } from 'react';
 
 export interface IDay { day: string; }
 
+/**
+ * @deprecated
+ * @param param0
+ */
 const Day: StatelessComponent<IDay> = ({ day }) => {
   return (
     <div style={{ textAlign: 'center' }}>

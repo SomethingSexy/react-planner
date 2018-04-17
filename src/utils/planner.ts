@@ -36,6 +36,10 @@ export const createLookupTables = (days: string[], intervals: string[]): Types.I
   };
 };
 
+/**
+ * @deprecated
+ * @param intervals
+ */
 export const gridTimes = (intervals: string[]): Types.IGridTime[] =>
   intervals.map((time, index) =>
     ({ time, static: true, x: 0, y: index + 1, w: 1, h: 1, i: uuid.v4() }));
@@ -60,6 +64,10 @@ export const range = (startDate: string, endDate: string | number | undefined): 
   return filledDates;
 };
 
+/**
+ * @deprecated
+ * @param days
+ */
 export const gridDays = (days: string[]): Types.IGridDay[] =>
   days.map((day, index) => ({ day, x: index + 1, y: 0, w: 1, h: 1, static: true, key: uuid.v4() }));
 

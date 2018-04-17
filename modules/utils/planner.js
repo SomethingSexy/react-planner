@@ -31,6 +31,10 @@ export const createLookupTables = (days, intervals) => {
         grid: days.map(day => intervals.map(time => ({ time, day })))
     };
 };
+/**
+ * @deprecated
+ * @param intervals
+ */
 export const gridTimes = (intervals) => intervals.map((time, index) => ({ time, static: true, x: 0, y: index + 1, w: 1, h: 1, i: uuid.v4() }));
 /**
  * Returns a filled array of numbers (as a string type) given the total.
@@ -48,6 +52,10 @@ export const range = (startDate, endDate) => {
     }
     return filledDates;
 };
+/**
+ * @deprecated
+ * @param days
+ */
 export const gridDays = (days) => days.map((day, index) => ({ day, x: index + 1, y: 0, w: 1, h: 1, static: true, key: uuid.v4() }));
 export const gridPlans = (plans, lookup) => plans.map(plan => {
     const dateIndex = lookup.byDate[plan.date];

@@ -1,12 +1,16 @@
 import { ReactNode } from 'react';
 
 export interface ILookup {
-  byDate: { [key: string]: number };
-  grid: {
-    day: string;
-    time: string;
-  }[][];
+  byDate: IByDate;
+  grid: IGrid;
 }
+
+export type IGrid = {
+  day: string;
+  time: string;
+}[][];
+
+export interface IByDate { [key: string]: number; }
 
 export interface IPlan {
   date: string; // valid date
@@ -63,3 +67,5 @@ export type RenderModal =
   (plan: IPlan, options: {}, isOpen: boolean) => ReactNode;
 
 export type EditPlan = (id: string, name: string, value: any) => void;
+
+export type UpdatePlan = (id: string, x: number, y: number) => void;

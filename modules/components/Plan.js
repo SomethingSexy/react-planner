@@ -8,6 +8,10 @@ const style = {
     color: 'inherit',
     cursor: 'pointer'
 };
+/**
+ * @deprecated
+ * @param param0
+ */
 const Plan = ({ plan, highlightedPlan, onSelectPlan, onOpenPlan, render }) => {
     let localStyle = style;
     if (plan.id === highlightedPlan) {
