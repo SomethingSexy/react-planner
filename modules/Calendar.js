@@ -7,9 +7,17 @@ const intervalMatch = /(\d+)(m|h)+/;
 class Calendar extends Component {
     constructor(props) {
         super(props);
-        this.handleUpdatePlan = (id, x, y) => {
-            console.log(id, x, y); // tslint:disable-line
+        this.handleUpdatePlan = (id, x, y, w, h) => {
+            console.log(id, x, y, w, h); // tslint:disable-line
             console.log(this.state.grid[x][y]); // tslint:disable-line
+            const updatedPlans = this.state.plans.map((plan) => {
+                if (plan.id !== id) {
+                    return plan;
+                }
+                return Object.assign({}, plan, { h,
+                    w });
+            });
+            this.setState({ plans: updatedPlans });
         };
         const { days, end = 24, dateStart, dateEnd, interval = '5m', start = 6 } = props;
         // TODO: Update this so the dateState is required but endDate can be optional or
@@ -36,7 +44,14 @@ class Calendar extends Component {
             grid,
             intervals,
             cols: rangeDays.length,
-            days: rangeDays
+            days: rangeDays,
+            plans: [{
+                    id: '1',
+                    x: 0,
+                    y: 0,
+                    w: 1,
+                    h: 1
+                }]
         };
     }
     render() {
@@ -46,8 +61,7 @@ class Calendar extends Component {
         return (React.createElement("div", null,
             this.renderDays(),
             this.renderTimes(),
-            React.createElement("div", { style: { position: 'relative', height: '500px', width: `${width}px`, left: '50px' } },
-                React.createElement(CalendarItem, { cols: cols, id: "1", onUpdate: this.handleUpdatePlan, x: 1, y: 1 }))));
+            React.createElement("div", { style: { position: 'relative', height: '500px', width: `${width}px`, left: '50px' } }, this.renderPlans())));
     }
     renderDays() {
         const { days } = this.state;
@@ -66,6 +80,13 @@ class Calendar extends Component {
                 React.createElement("p", { style: { textOverflow: 'ellipsis', overflow: 'hidden' } }, interval)));
         });
         return (React.createElement("div", { style: { width: '50px' } }, renderedIntervals));
+    }
+    renderPlans() {
+        // TODO: type here
+        const { cols } = this.state;
+        return this.state.plans.map((plan) => {
+            return (React.createElement(CalendarItem, { cols: cols, h: plan.h, id: plan.id, key: plan.id, onUpdate: this.handleUpdatePlan, x: plan.x, w: plan.w, y: plan.y }));
+        });
     }
 }
 export default Calendar;

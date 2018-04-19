@@ -28,6 +28,7 @@ export interface IState {
   days: string[];
   grid: Types.IGrid;
   intervals: string[];
+  plans: {}[];
 }
 
 class Calendar extends Component<IProps, IState> {
@@ -78,7 +79,14 @@ class Calendar extends Component<IProps, IState> {
       grid,
       intervals,
       cols: rangeDays.length,
-      days: rangeDays
+      days: rangeDays,
+      plans: [{
+        id: '1',
+        x: 0,
+        y: 0,
+        w: 1,
+        h: 1
+      }]
     };
   }
 
@@ -91,7 +99,7 @@ class Calendar extends Component<IProps, IState> {
         {this.renderDays()}
         {this.renderTimes()}
         <div style={{ position: 'relative', height: '500px', width: `${width}px`, left: '50px' }}>
-          <CalendarItem cols={cols} id="1" onUpdate={this.handleUpdatePlan} x={1} y={1} />
+          {this.renderPlans()}
         </div>
       </div>
     );
@@ -139,9 +147,41 @@ class Calendar extends Component<IProps, IState> {
     );
   }
 
-  private handleUpdatePlan = (id: string, x: number, y: number) => {
-    console.log(id, x, y); // tslint:disable-line
+  private renderPlans() {
+    // TODO: type here
+    const { cols } = this.state;
+    return this.state.plans.map((plan: any) => {
+      return (
+        <CalendarItem
+          cols={cols}
+          h={plan.h}
+          id={plan.id}
+          key={plan.id}
+          onUpdate={this.handleUpdatePlan}
+          x={plan.x}
+          w={plan.w}
+          y={plan.y}
+        />
+      );
+    });
+  }
+
+  private handleUpdatePlan = (id: string, x: number, y: number, w: number, h: number) => {
+    console.log(id, x, y, w, h); // tslint:disable-line
     console.log(this.state.grid[x][y]) // tslint:disable-line
+    const updatedPlans = this.state.plans.map((plan: any) => {
+      if (plan.id !== id) {
+        return plan;
+      }
+
+      return {
+        ...plan,
+        h,
+        w
+      };
+    });
+
+    this.setState({ plans: updatedPlans });
   }
 }
 

@@ -24,7 +24,9 @@ interface IPosition {
 interface IProps {
   cols: number;
   id: string;
+  h: number;
   onUpdate: Types.UpdatePlan;
+  w: number;
   // starting x coordinate
   x: number;
   // starting y coordinate
@@ -36,10 +38,7 @@ interface IState {
     left: number;
     top: number;
   } | null;
-  resizing?: {
-    width: number;
-    height: number;
-  } | null;
+  resizing?: IPosition | null;
   top: number;
   left: number;
 }
@@ -88,6 +87,9 @@ class CalendarItem extends Component<IProps, IState> {
         onDragStart={this.onDragHandler('onDragStart')}
         onDrag={this.onDragHandler('onDrag')}
         onDragStop={this.onDragHandler('onDragStop')}
+        onResizeStop={this.handleResize()}
+        // onResizeStart={this.handleResize('onResizeStart')}
+        // onResize={this.handleResize('onResize')}
         ref={(c: any) => { this.rnd = c; }}
         resizeGrid={grid}
         style={style}
@@ -177,6 +179,36 @@ class CalendarItem extends Component<IProps, IState> {
     return { x, y };
   }
 
+  private calcWH({ height, width }: { height: number, width: number }, direction: string)
+  : { w: number, h: number } {
+    const { cols } = this.props;
+    const rowHeight = 50;
+    const maxRows = 10;
+    const margin = [0, 0];
+    const { x, y } = this.props;
+    const colWidth = this.calcColWidth();
+
+    let w;
+    let h;
+
+    // width = colWidth * w - (margin * (w - 1))
+    // ...
+    // w = (width + margin) / (colWidth + margin)
+    w = Math.round((width + margin[0]) / (colWidth + margin[0]));
+    if (direction === 'bottom') { // tslint:disable-line prefer-conditional-expression
+      h = Math.round((height + margin[1]) / (rowHeight + margin[1])) + this.props.h;
+      console.log(h); // tslint:disable-line
+    } else {
+      h = Math.round((height + margin[1]) / (rowHeight + margin[1]));
+    }
+
+    // Capping
+    w = Math.max(Math.min(w, cols - x), 0);
+    h = Math.max(Math.min(h, maxRows - y), 0);
+    console.log(h); // tslint:disable-line
+    return { w, h };
+  }
+
   private onDragHandler(handlerName: string) {
     return (_: Event, { node, deltaX, deltaY }: IReactDraggableCallbackData) => {
       const { cols } = this.props;
@@ -222,7 +254,7 @@ class CalendarItem extends Component<IProps, IState> {
         console.log(newPosition, x, y); // tslint:disable-line
         console.log('old', this.state.top, this.state.left, 'new', x, y); // tslint:disable-line
         // tell calendar that we have changed a plan's position
-        this.props.onUpdate(this.props.id, x, y);
+        this.props.onUpdate(this.props.id, x, y, this.props.w, this.props.h);
         if (x > cols) {
           // this was a test to undestand how x, y and update work
           const pos = this.calcPosition(x, y, 1, 1, this.state);
@@ -236,6 +268,37 @@ class CalendarItem extends Component<IProps, IState> {
       }
 
       // return handler.call(this, this.props.i, x, y, { e, node, newPosition });
+    };
+  }
+
+  private handleResize() {
+    return ({}: Event, direction: string, {}: any, delta: IPosition
+    ) => {
+      const { cols, x, y, id } = this.props;
+      // come from props or static
+      const minW = 1; // grid count
+      const minH = 1; // grid count
+      const maxW = 500; // total rows
+      const maxRows = 10;
+      // Get new X
+      console.log(delta, direction); // tslint:disable-line
+      let { w, h } = this.calcWH(delta, direction);
+
+      // Cap w at numCols
+      w = Math.min(w, cols - x);
+      // Ensure w is at least 1
+      w = Math.max(w, 1);
+
+      // Min/max capping
+      w = Math.max(Math.min(w, maxW), minW);
+      h = Math.max(Math.min(h, maxRows), minH);
+
+      // this.setState({ resizing: handlerName === 'onResizeStop' ? null : size });
+
+      // if (handlerName === 'onResize') {
+      this.props.onUpdate(id, x, y, w, h);
+      // }
+      // handler.call(this, i, w, h, { e, node, size });
     };
   }
 }

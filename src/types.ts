@@ -68,4 +68,4 @@ export type RenderModal =
 
 export type EditPlan = (id: string, name: string, value: any) => void;
 
-export type UpdatePlan = (id: string, x: number, y: number) => void;
+export type UpdatePlan = (id: string, x: number, y: number, w: number, h: number) => void;
