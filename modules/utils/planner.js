@@ -99,8 +99,8 @@ export const isValidTime = (x, y, lookup) => {
  * @returns {object|boolean} - false if it cannot add or information about how to add
  */
 export const canAdd = (x, y, interval, lookup, plans) => {
-    const dateLookup = x - 1;
-    const stateTimeLookup = y - 1;
+    const dateLookup = x;
+    const stateTimeLookup = y;
     const toTimeLookup = y + interval;
     const start = lookup.grid[dateLookup][stateTimeLookup];
     let to = lookup.grid[dateLookup][toTimeLookup];

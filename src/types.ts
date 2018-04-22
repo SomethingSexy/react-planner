@@ -16,7 +16,7 @@ export interface IPlan {
   date: string; // valid date
   id: string;
   time: number;
-  timeRange: string;
+  timeRange?: string;
   toTime: number;
   // stores dynamic plan data
   [key: string]: any;

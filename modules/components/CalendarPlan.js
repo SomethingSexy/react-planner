@@ -24,7 +24,7 @@ class CalendarItem extends Component {
     render() {
         const { top, left } = this.state;
         // for now let RND store x, y, width, and height
-        return (React.createElement(RND, { bounds: "parent", default: { x: top, y: left, width: 50, height: 50 }, dragGrid: grid, enableResizing: resize, minWidth: 50, minHeight: 50, onDragStart: this.onDragHandler('onDragStart'), onDrag: this.onDragHandler('onDrag'), onDragStop: this.onDragHandler('onDragStop'), onResizeStop: this.handleResize(), 
+        return (React.createElement(RND, { bounds: "parent", default: { x: left, y: top, width: 50, height: 50 }, dragGrid: grid, enableResizing: resize, minWidth: 50, minHeight: 50, onDragStart: this.onDragHandler('onDragStart'), onDrag: this.onDragHandler('onDrag'), onDragStop: this.onDragHandler('onDragStop'), onResizeStop: this.handleResize(), 
             // onResizeStart={this.handleResize('onResizeStart')}
             // onResize={this.handleResize('onResize')}
             ref: (c) => { this.rnd = c; }, resizeGrid: grid, style: style },

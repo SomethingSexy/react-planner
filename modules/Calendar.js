@@ -1,12 +1,56 @@
 import invariant from 'invariant';
 import * as moment from 'moment';
 import React, { Component } from 'react';
+import { findDOMNode } from 'react-dom';
+import uuid from 'uuid';
 import CalendarItem from './components/CalendarPlan';
-import { calculateIntervals, createLookupTables, range } from './utils/planner';
+import elementFromPoint from './utils/elementFromPoint.js';
+import { calculateIntervals, canAdd, createLookupTables, range } from './utils/planner';
 const intervalMatch = /(\d+)(m|h)+/;
+// TODO: We don't want to expose w,h,x,y but convert those to meaningful
+// things.  How much information do we want to leave to the rnd state
+// vs control ourselves.  Or do we want to look that information up
+// each time we render?
 class Calendar extends Component {
     constructor(props) {
         super(props);
+        this.coordinates = null;
+        this.handleAddPlan = (event) => {
+            const currentClick = elementFromPoint(event.clientX, event.clientY);
+            // not a grid item
+            if (currentClick.classList.contains('planner-layout')) {
+                const { byDate, grid, plans } = this.state;
+                // const { plans } = this.props;
+                const { x, y } = this.getGrid(event);
+                const defaultTo = this.props.defaultPlanInterval || 1;
+                const isValidAdd = canAdd(x, y, defaultTo, { byDate, grid }, plans);
+                if (isValidAdd) {
+                    const { start, to, toTime, startTime } = isValidAdd;
+                    // const id = uuid.v4();
+                    console.log(start, to, toTime, startTime); // tslint:disable-line
+                    this.setState({
+                        plans: [
+                            ...this.state.plans,
+                            {
+                                toTime,
+                                id: uuid.v4(),
+                                time: startTime,
+                                date: start.day
+                            }
+                        ]
+                    });
+                    // onUpdatePlans([
+                    //   ...plans, {
+                    //     id,
+                    //     toTime,
+                    //     date: start.day,
+                    //     time: startTime,
+                    //     timeRange: `${start.time} - ${to.time}`
+                    //   }
+                    // ]);
+                }
+            }
+        };
         this.handleUpdatePlan = (id, x, y, w, h) => {
             console.log(id, x, y, w, h); // tslint:disable-line
             console.log(this.state.grid[x][y]); // tslint:disable-line
@@ -17,6 +61,7 @@ class Calendar extends Component {
                 return Object.assign({}, plan, { h,
                     w });
             });
+            // for now set the state, but this should get switched out for call updater func
             this.setState({ plans: updatedPlans });
         };
         const { days, end = 24, dateStart, dateEnd, interval = '5m', start = 6 } = props;
@@ -47,12 +92,38 @@ class Calendar extends Component {
             days: rangeDays,
             plans: [{
                     id: '1',
-                    x: 0,
-                    y: 0,
-                    w: 1,
-                    h: 1
+                    // x: 0,
+                    // y: 0,
+                    // w: 1,
+                    // h: 1,
+                    time: 0,
+                    toTime: 1,
+                    date: '02/02/1985'
                 }]
         };
+    }
+    componentDidMount() {
+        // Get the width and height of a single box at the time
+        // to use that to calculate rough grids
+        const grid = findDOMNode(this.grid).getBoundingClientRect();
+        // tslint:disable-next-line
+        // console.log(window.pageXOffset, window.pageYOffset, window.pageYOffset + grid.top, window.pageXOffset + grid.left);
+        // const element = findDOMNode(this.spacer).getBoundingClientRect();
+        // grab the width and height to be able to calculate click positions
+        // const { width, height } = element;
+        this.coordinates = {
+            grid: {
+                x: window.pageXOffset + grid.left,
+                y: window.pageYOffset + grid.top
+            },
+            height: Math.round(50),
+            width: Math.round(50)
+        };
+        // document.addEventListener('keydown', (event: any) => {
+        //   if (event.keyCode === 27) {
+        //     this.handleCloseModal();
+        //   }
+        // });
     }
     render() {
         // TODO: width height should be based off columns, etc
@@ -61,7 +132,7 @@ class Calendar extends Component {
         return (React.createElement("div", null,
             this.renderDays(),
             this.renderTimes(),
-            React.createElement("div", { style: { position: 'relative', height: '500px', width: `${width}px`, left: '50px' } }, this.renderPlans())));
+            React.createElement("div", { className: "planner-layout", onDoubleClick: this.handleAddPlan, ref: (ref) => { this.grid = ref; }, style: { position: 'relative', height: '500px', width: `${width}px`, left: '50px' } }, this.renderPlans())));
     }
     renderDays() {
         const { days } = this.state;
@@ -82,11 +153,33 @@ class Calendar extends Component {
         return (React.createElement("div", { style: { width: '50px' } }, renderedIntervals));
     }
     renderPlans() {
+        const { byDate, cols } = this.state;
         // TODO: type here
-        const { cols } = this.state;
         return this.state.plans.map((plan) => {
-            return (React.createElement(CalendarItem, { cols: cols, h: plan.h, id: plan.id, key: plan.id, onUpdate: this.handleUpdatePlan, x: plan.x, w: plan.w, y: plan.y }));
+            return (React.createElement(CalendarItem, { cols: cols, h: plan.toTime, id: plan.id, key: plan.id, onUpdate: this.handleUpdatePlan, x: byDate[plan.date], w: 1, y: plan.time }));
         });
+    }
+    getGrid(event) {
+        const coordinates = this.coordinates;
+        if (!coordinates) {
+            // TODO: figure out what this should be
+            return { x: 0, y: 0 };
+        }
+        // TODO: come from state
+        const margin = [0, 0];
+        // where the user clicked, minus the top left corner of the grid
+        const xWithin = event.pageX - coordinates.grid.x;
+        const yWithin = event.pageY - coordinates.grid.y;
+        // this should give us the rough location of the click within the grid
+        // adding 10 to account for the transformation margin between grid points
+        // const y = Math.floor(yWithin / (coordinates.height + 10));
+        // const x = Math.floor(xWithin / (coordinates.width + 10));
+        const y = Math.floor(yWithin / (coordinates.height + margin[1]));
+        const x = Math.floor(xWithin / (coordinates.width + margin[0]));
+        // TODO: Might make more sense to adjust the coordinates here and then
+        // everything else can work on the root grid, so 1,1 would === 0,0
+        // then we wouldn't need to adjust everywhere else
+        return { x, y };
     }
 }
 export default Calendar;

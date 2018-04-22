@@ -125,8 +125,8 @@ export const isValidTime = (x: number, y: number, lookup: Types.ILookup) => {
  */
 export const canAdd =
   (x: number, y: number, interval: number, lookup: Types.ILookup, plans: Types.IPlan[]) => {
-    const dateLookup = x - 1;
-    const stateTimeLookup = y - 1;
+    const dateLookup = x;
+    const stateTimeLookup = y;
     const toTimeLookup = y + interval;
     const start = lookup.grid[dateLookup][stateTimeLookup];
     let to = lookup.grid[dateLookup][toTimeLookup];

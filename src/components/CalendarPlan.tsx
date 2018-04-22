@@ -79,7 +79,7 @@ class CalendarItem extends Component<IProps, IState> {
     return (
       <RND
         bounds="parent"
-        default={{ x: top, y: left, width: 50, height: 50 }}
+        default={{ x: left, y: top, width: 50, height: 50 }}
         dragGrid={grid}
         enableResizing={resize}
         minWidth={50}
