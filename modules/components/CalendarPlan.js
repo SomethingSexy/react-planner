@@ -13,35 +13,68 @@ const style = {
 };
 const grid = [50, 50];
 class CalendarItem extends Component {
+    // private rnd: any;
     constructor(props) {
         super(props);
-        const { top, left } = this.calcPosition(props.x, props.y, 50, 50);
-        this.state = {
+        this.handleDragStart = (_, { node }) => {
+            const newPosition = { top: 0, left: 0 };
+            const { offsetParent } = node;
+            if (!offsetParent) {
+                return;
+            }
+            const parentRect = offsetParent.getBoundingClientRect();
+            const clientRect = node.getBoundingClientRect();
+            newPosition.left = clientRect.left - parentRect.left + offsetParent.scrollLeft;
+            newPosition.top = clientRect.top - parentRect.top + offsetParent.scrollTop;
+            this.setState({ dragging: newPosition });
+        };
+        this.handleDrag = (_, { deltaX, deltaY }) => {
+            if (!this.state.dragging) {
+                throw new Error('onDrag called before onDragStart.');
+            }
+            const newPosition = { top: 0, left: 0 };
+            newPosition.left = this.state.dragging.left + deltaX;
+            newPosition.top = this.state.dragging.top + deltaY;
+            this.setState({ dragging: newPosition });
+        };
+        this.handleDragStop = (_, {}) => {
+            const newPosition = { top: 0, left: 0 };
+            if (!this.state.dragging) {
+                throw new Error('onDragEnd called before onDragStart.');
+            }
+            newPosition.left = this.state.dragging.left;
+            newPosition.top = this.state.dragging.top;
+            this.setState({ dragging: null });
+            const { x, y } = this.calcXY(newPosition.top, newPosition.left);
+            // This gives me a better grid position
+            console.log(newPosition, x, y); // tslint:disable-line
+            console.log('old', this.state.top, this.state.left, 'new', x, y); // tslint:disable-line
+            // tell calendar that we have changed a plan's position
+            this.props.onUpdate(this.props.id, x, y, this.props.w, this.props.h);
+        };
+        this.state = { top: 0, left: 0 };
+    }
+    /**
+     *
+     * @param nextProps
+     * @param nextState
+     */
+    static getDerivedStateFromProps(nextProps, nextState) {
+        const { top, left } = CalendarItem.calcPosition(nextProps.x, nextProps.y, 50, 50, nextState);
+        return {
             left,
             top
         };
     }
-    render() {
-        const { top, left } = this.state;
-        // for now let RND store x, y, width, and height
-        return (React.createElement(RND, { bounds: "parent", default: { x: left, y: top, width: 50, height: 50 }, dragGrid: grid, enableResizing: resize, minWidth: 50, minHeight: 50, onDragStart: this.onDragHandler('onDragStart'), onDrag: this.onDragHandler('onDrag'), onDragStop: this.onDragHandler('onDragStop'), onResizeStop: this.handleResize(), 
-            // onResizeStart={this.handleResize('onResizeStart')}
-            // onResize={this.handleResize('onResize')}
-            ref: (c) => { this.rnd = c; }, resizeGrid: grid, style: style },
-            React.createElement("div", null, "balls")));
-    }
-    calcColWidth() {
-        // const cols = 10;
-        // const containerWidth = 50;
-        // const containerPadding = [0, 0];
-        // const margin = [0, 0];
-        // // const { margin, containerPadding, containerWidth, cols } = this.props;
-        // return (
-        //   (containerWidth - margin[0] * (cols - 1) - containerPadding[0] * 2) / cols
-        // );
-        return 50;
-    }
-    calcPosition(x, y, w, h, state) {
+    /**
+     *
+     * @param x
+     * @param y
+     * @param w
+     * @param h
+     * @param state
+     */
+    static calcPosition(x, y, w, h, state) {
         const containerPadding = [0, 0];
         const rowHeight = 50;
         const margin = [0, 0];
@@ -69,6 +102,27 @@ class CalendarItem extends Component {
         }
         return out;
     }
+    static calcColWidth() {
+        // const cols = 10;
+        // const containerWidth = 50;
+        // const containerPadding = [0, 0];
+        // const margin = [0, 0];
+        // // const { margin, containerPadding, containerWidth, cols } = this.props;
+        // return (
+        //   (containerWidth - margin[0] * (cols - 1) - containerPadding[0] * 2) / cols
+        // );
+        return 50;
+    }
+    render() {
+        const { top, left } = this.state;
+        // for now let RND store x, y, width, and height
+        return (React.createElement(RND, { bounds: "parent", 
+            // default={{ x: left, y: top, width: 50, height: 50 }}
+            dragGrid: grid, enableResizing: resize, minWidth: 50, minHeight: 50, onDragStart: this.handleDragStart, onDrag: this.handleDrag, onDragStop: this.handleDragStop, onResizeStop: this.handleResize(), position: { x: left, y: top }, 
+            // ref={(c: any) => { this.rnd = c; }}
+            resizeGrid: grid, style: style },
+            React.createElement("div", null, "balls")));
+    }
     calcXY(top, left) {
         const { cols } = this.props;
         const rowHeight = 50;
@@ -77,7 +131,7 @@ class CalendarItem extends Component {
         const maxRows = 10;
         const margin = [0, 0];
         // const { margin, cols, rowHeight, w, h, maxRows } = this.props;
-        const colWidth = this.calcColWidth();
+        const colWidth = CalendarItem.calcColWidth();
         console.log('coloWidth', colWidth); // tslint:disable-line
         // left = colWidth * x + margin * (x + 1)
         // l = cx + m(x+1)
@@ -100,7 +154,7 @@ class CalendarItem extends Component {
         const maxRows = 10;
         const margin = [0, 0];
         const { x, y } = this.props;
-        const colWidth = this.calcColWidth();
+        const colWidth = CalendarItem.calcColWidth();
         let w;
         let h;
         // width = colWidth * w - (margin * (w - 1))
@@ -119,62 +173,6 @@ class CalendarItem extends Component {
         h = Math.max(Math.min(h, maxRows - y), 0);
         console.log(h); // tslint:disable-line
         return { w, h };
-    }
-    onDragHandler(handlerName) {
-        return (_, { node, deltaX, deltaY }) => {
-            const { cols } = this.props;
-            // const handler = this.props[handlerName];
-            // if (!handler) return;
-            const newPosition = { top: 0, left: 0 };
-            // Get new XY
-            switch (handlerName) {
-                case 'onDragStart': {
-                    // TODO: this wont work on nested parents
-                    const { offsetParent } = node;
-                    if (!offsetParent) {
-                        return;
-                    }
-                    const parentRect = offsetParent.getBoundingClientRect();
-                    const clientRect = node.getBoundingClientRect();
-                    newPosition.left =
-                        clientRect.left - parentRect.left + offsetParent.scrollLeft;
-                    newPosition.top =
-                        clientRect.top - parentRect.top + offsetParent.scrollTop;
-                    this.setState({ dragging: newPosition });
-                    break;
-                }
-                case 'onDrag':
-                    if (!this.state.dragging) {
-                        throw new Error('onDrag called before onDragStart.');
-                    }
-                    newPosition.left = this.state.dragging.left + deltaX;
-                    newPosition.top = this.state.dragging.top + deltaY;
-                    this.setState({ dragging: newPosition });
-                    break;
-                case 'onDragStop':
-                    if (!this.state.dragging) {
-                        throw new Error('onDragEnd called before onDragStart.');
-                    }
-                    newPosition.left = this.state.dragging.left;
-                    newPosition.top = this.state.dragging.top;
-                    this.setState({ dragging: null });
-                    const { x, y } = this.calcXY(newPosition.top, newPosition.left);
-                    // This gives me a better grid position
-                    console.log(newPosition, x, y); // tslint:disable-line
-                    console.log('old', this.state.top, this.state.left, 'new', x, y); // tslint:disable-line
-                    // tell calendar that we have changed a plan's position
-                    this.props.onUpdate(this.props.id, x, y, this.props.w, this.props.h);
-                    if (x > cols) {
-                        // this was a test to undestand how x, y and update work
-                        const pos = this.calcPosition(x, y, 1, 1, this.state);
-                        this.rnd.updatePosition({ x: (pos.left - 50), y: pos.top });
-                    }
-                    break;
-                default:
-                    throw new Error('onDragHandler called with unrecognized handlerName: ' + handlerName);
-            }
-            // return handler.call(this, this.props.i, x, y, { e, node, newPosition });
-        };
     }
     handleResize() {
         return ({}, direction, {}, delta) => {
@@ -195,10 +193,7 @@ class CalendarItem extends Component {
             w = Math.max(Math.min(w, maxW), minW);
             h = Math.max(Math.min(h, maxRows), minH);
             // this.setState({ resizing: handlerName === 'onResizeStop' ? null : size });
-            // if (handlerName === 'onResize') {
             this.props.onUpdate(id, x, y, w, h);
-            // }
-            // handler.call(this, i, w, h, { e, node, size });
         };
     }
 }

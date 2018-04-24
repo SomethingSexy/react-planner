@@ -5,7 +5,7 @@ import { findDOMNode } from 'react-dom';
 import uuid from 'uuid';
 import CalendarItem from './components/CalendarPlan';
 import elementFromPoint from './utils/elementFromPoint.js';
-import { calculateIntervals, canAdd, createLookupTables, range } from './utils/planner';
+import { calculateIntervals, canAdd, canMove, createLookupTables, range } from './utils/planner';
 const intervalMatch = /(\d+)(m|h)+/;
 // TODO: We don't want to expose w,h,x,y but convert those to meaningful
 // things.  How much information do we want to leave to the rnd state
@@ -25,9 +25,7 @@ class Calendar extends Component {
                 const defaultTo = this.props.defaultPlanInterval || 1;
                 const isValidAdd = canAdd(x, y, defaultTo, { byDate, grid }, plans);
                 if (isValidAdd) {
-                    const { start, to, toTime, startTime } = isValidAdd;
-                    // const id = uuid.v4();
-                    console.log(start, to, toTime, startTime); // tslint:disable-line
+                    const { start, toTime, startTime } = isValidAdd;
                     this.setState({
                         plans: [
                             ...this.state.plans,
@@ -39,30 +37,23 @@ class Calendar extends Component {
                             }
                         ]
                     });
-                    // onUpdatePlans([
-                    //   ...plans, {
-                    //     id,
-                    //     toTime,
-                    //     date: start.day,
-                    //     time: startTime,
-                    //     timeRange: `${start.time} - ${to.time}`
-                    //   }
-                    // ]);
                 }
             }
         };
         this.handleUpdatePlan = (id, x, y, w, h) => {
-            console.log(id, x, y, w, h); // tslint:disable-line
-            console.log(this.state.grid[x][y]); // tslint:disable-line
-            const updatedPlans = this.state.plans.map((plan) => {
-                if (plan.id !== id) {
-                    return plan;
-                }
-                return Object.assign({}, plan, { h,
-                    w });
-            });
-            // for now set the state, but this should get switched out for call updater func
-            this.setState({ plans: updatedPlans });
+            const { byDate, grid, plans } = this.state;
+            const defaultTo = this.props.defaultPlanInterval || 1;
+            const isValidAdd = canMove(id, x, y, defaultTo, { byDate, grid }, plans);
+            if (isValidAdd) {
+                const updatedPlans = this.state.plans.map((plan) => {
+                    if (plan.id !== id) {
+                        return plan;
+                    }
+                    return Object.assign({}, plan, { w, toTime: h, date: this.state.grid[x][y].day, time: y });
+                });
+                // for now set the state, but this should get switched out for call updater func
+                this.setState({ plans: updatedPlans });
+            }
         };
         const { days, end = 24, dateStart, dateEnd, interval = '5m', start = 6 } = props;
         // TODO: Update this so the dateState is required but endDate can be optional or

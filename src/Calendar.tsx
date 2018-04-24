@@ -9,6 +9,7 @@ import elementFromPoint from './utils/elementFromPoint.js';
 import {
   calculateIntervals,
   canAdd,
+  canMove,
   createLookupTables,
   range
 } from './utils/planner';
@@ -250,9 +251,7 @@ class Calendar extends Component<IProps, IState> {
       const isValidAdd = canAdd(x, y, defaultTo, { byDate, grid }, plans);
 
       if (isValidAdd) {
-        const { start, to, toTime, startTime } = isValidAdd;
-        // const id = uuid.v4();
-        console.log(start, to, toTime, startTime); // tslint:disable-line
+        const { start, toTime, startTime } = isValidAdd;
         this.setState({
           plans: [
             ...this.state.plans,
@@ -264,36 +263,34 @@ class Calendar extends Component<IProps, IState> {
             }
           ]
         });
-        // onUpdatePlans([
-        //   ...plans, {
-        //     id,
-        //     toTime,
-        //     date: start.day,
-        //     time: startTime,
-        //     timeRange: `${start.time} - ${to.time}`
-        //   }
-        // ]);
       }
     }
   }
 
   private handleUpdatePlan = (id: string, x: number, y: number, w: number, h: number) => {
-    console.log(id, x, y, w, h); // tslint:disable-line
-    console.log(this.state.grid[x][y]) // tslint:disable-line
-    const updatedPlans = this.state.plans.map((plan: any) => {
-      if (plan.id !== id) {
-        return plan;
-      }
+    const { byDate, grid, plans } = this.state;
+    const defaultTo = this.props.defaultPlanInterval || 1;
 
-      return {
-        ...plan,
-        h,
-        w
-      };
-    });
+    const isValidAdd = canMove(id, x, y, defaultTo, { byDate, grid }, plans);
 
-    // for now set the state, but this should get switched out for call updater func
-    this.setState({ plans: updatedPlans });
+    if (isValidAdd) {
+      const updatedPlans = this.state.plans.map((plan: any) => {
+        if (plan.id !== id) {
+          return plan;
+        }
+
+        return {
+          ...plan,
+          w,
+          toTime: h,
+          date: this.state.grid[x][y].day,
+          time: y
+        };
+      });
+
+      // for now set the state, but this should get switched out for call updater func
+      this.setState({ plans: updatedPlans });
+    }
   }
 }
 

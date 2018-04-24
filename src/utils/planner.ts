@@ -102,7 +102,7 @@ const collided = (y: number, interval: number, plans: Types.IPlan[]) =>
   !!plans.find(plan => {
     // need to check if the plan crosses any other plan.
     // if they start at the same time
-    if (plan.time === (y - 1)) {
+    if (plan.time === y) {
       return true;
     }
     // now check if the end time of the new plan will cross over
@@ -148,14 +148,14 @@ export const canAdd =
     }
 
     // if we still cannot add but the interval is 0, then return false
-    if (interval === 0) {
+    if (interval === 1) {
       return false;
     }
 
     // if we can't add, see if lowering the interval would allow it to add
     // lower to fit until we cannot anymore
     let intCheck = interval;
-    while (intCheck >= 0 && collision) {
+    while (intCheck >= 1 && collision) {
       intCheck = intCheck - 1;
       collision = collided(y, intCheck, datePlans);
     }
@@ -167,6 +167,28 @@ export const canAdd =
     to = lookup.grid[dateLookup][y + intCheck];
     return { start, to, toTime: y + intCheck, startTime: stateTimeLookup };
   };
+
+export const canMove = (
+  id: string, x: number, y: number, interval: number, lookup: Types.ILookup, plans: Types.IPlan[]
+) => {
+  const dateLookup = x;
+  const stateTimeLookup = y;
+  const toTimeLookup = y + interval;
+
+  if (!isValidTime(dateLookup, stateTimeLookup, lookup)
+    || !isValidTime(dateLookup, toTimeLookup, lookup)) {
+    return false;
+  }
+
+  const date = lookup.grid[dateLookup][stateTimeLookup];
+  // grab the plans for this date, sorted by time, filter out the plan we are moving
+  const datePlans = getPlansByDate(plans, date.day).filter(plan => plan.id !== id);
+
+  // check if this would collide with another plan
+  const collision = collided(y, interval, datePlans);
+
+  return !collision;
+};
 
 export const getClosestPlan = (id: string, plans: Types.IPlan[], direction?: string) => {
   const planToMove = plans.find(plan => plan.id === id);

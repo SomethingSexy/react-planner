@@ -59,59 +59,29 @@ const style = {
 const grid = [50, 50];
 
 class CalendarItem extends Component<IProps, IState> {
+  /**
+   *
+   * @param nextProps
+   * @param nextState
+   */
+  public static getDerivedStateFromProps(nextProps: IProps, nextState: IState) {
+    const { top, left } = CalendarItem.calcPosition(nextProps.x, nextProps.y, 50, 50, nextState);
 
-  private rnd: any;
-
-  constructor(props: IProps) {
-    super(props);
-
-    const { top, left } = this.calcPosition(props.x, props.y, 50, 50);
-
-    this.state = {
+    return {
       left,
       top
     };
   }
 
-  public render() {
-    const { top, left } = this.state;
-    // for now let RND store x, y, width, and height
-    return (
-      <RND
-        bounds="parent"
-        default={{ x: left, y: top, width: 50, height: 50 }}
-        dragGrid={grid}
-        enableResizing={resize}
-        minWidth={50}
-        minHeight={50}
-        onDragStart={this.onDragHandler('onDragStart')}
-        onDrag={this.onDragHandler('onDrag')}
-        onDragStop={this.onDragHandler('onDragStop')}
-        onResizeStop={this.handleResize()}
-        // onResizeStart={this.handleResize('onResizeStart')}
-        // onResize={this.handleResize('onResize')}
-        ref={(c: any) => { this.rnd = c; }}
-        resizeGrid={grid}
-        style={style}
-      >
-        <div>balls</div>
-      </RND>
-    );
-  }
-
-  private calcColWidth(): number {
-    // const cols = 10;
-    // const containerWidth = 50;
-    // const containerPadding = [0, 0];
-    // const margin = [0, 0];
-    // // const { margin, containerPadding, containerWidth, cols } = this.props;
-    // return (
-    //   (containerWidth - margin[0] * (cols - 1) - containerPadding[0] * 2) / cols
-    // );
-    return 50;
-  }
-
-  private calcPosition(
+  /**
+   *
+   * @param x
+   * @param y
+   * @param w
+   * @param h
+   * @param state
+   */
+  private static calcPosition(
     x: number,
     y: number,
     w: number,
@@ -152,6 +122,50 @@ class CalendarItem extends Component<IProps, IState> {
     return out;
   }
 
+  private static calcColWidth(): number {
+    // const cols = 10;
+    // const containerWidth = 50;
+    // const containerPadding = [0, 0];
+    // const margin = [0, 0];
+    // // const { margin, containerPadding, containerWidth, cols } = this.props;
+    // return (
+    //   (containerWidth - margin[0] * (cols - 1) - containerPadding[0] * 2) / cols
+    // );
+    return 50;
+  }
+
+  // private rnd: any;
+
+  constructor(props: IProps) {
+    super(props);
+    this.state = { top: 0, left: 0 };
+  }
+
+  public render() {
+    const { top, left } = this.state;
+    // for now let RND store x, y, width, and height
+    return (
+      <RND
+        bounds="parent"
+        // default={{ x: left, y: top, width: 50, height: 50 }}
+        dragGrid={grid}
+        enableResizing={resize}
+        minWidth={50}
+        minHeight={50}
+        onDragStart={this.handleDragStart}
+        onDrag={this.handleDrag}
+        onDragStop={this.handleDragStop}
+        onResizeStop={this.handleResize()}
+        position={{ x: left, y: top }}
+        // ref={(c: any) => { this.rnd = c; }}
+        resizeGrid={grid}
+        style={style}
+      >
+        <div>balls</div>
+      </RND>
+    );
+  }
+
   private calcXY(top: number, left: number): { x: number, y: number } {
     const { cols } = this.props;
     const rowHeight = 50;
@@ -160,7 +174,7 @@ class CalendarItem extends Component<IProps, IState> {
     const maxRows = 10;
     const margin = [0, 0];
     // const { margin, cols, rowHeight, w, h, maxRows } = this.props;
-    const colWidth = this.calcColWidth();
+    const colWidth = CalendarItem.calcColWidth();
     console.log('coloWidth', colWidth); // tslint:disable-line
     // left = colWidth * x + margin * (x + 1)
     // l = cx + m(x+1)
@@ -186,7 +200,7 @@ class CalendarItem extends Component<IProps, IState> {
     const maxRows = 10;
     const margin = [0, 0];
     const { x, y } = this.props;
-    const colWidth = this.calcColWidth();
+    const colWidth = CalendarItem.calcColWidth();
 
     let w;
     let h;
@@ -209,66 +223,41 @@ class CalendarItem extends Component<IProps, IState> {
     return { w, h };
   }
 
-  private onDragHandler(handlerName: string) {
-    return (_: Event, { node, deltaX, deltaY }: IReactDraggableCallbackData) => {
-      const { cols } = this.props;
-      // const handler = this.props[handlerName];
-      // if (!handler) return;
+  private handleDragStart = (_: Event, { node }: IReactDraggableCallbackData) => {
+    const newPosition: IPartialPosition = { top: 0, left: 0 };
 
-      const newPosition: IPartialPosition = { top: 0, left: 0 };
+    const { offsetParent } = node;
+    if (!offsetParent) {
+      return;
+    }
+    const parentRect = offsetParent.getBoundingClientRect();
+    const clientRect = node.getBoundingClientRect();
+    newPosition.left = clientRect.left - parentRect.left + offsetParent.scrollLeft;
+    newPosition.top = clientRect.top - parentRect.top + offsetParent.scrollTop;
+    this.setState({ dragging: newPosition });
+  }
 
-      // Get new XY
-      switch (handlerName) {
-      case 'onDragStart': {
-        // TODO: this wont work on nested parents
-        const { offsetParent } = node;
-        if (!offsetParent) {
-          return;
-        }
-        const parentRect = offsetParent.getBoundingClientRect();
-        const clientRect = node.getBoundingClientRect();
-        newPosition.left =
-          clientRect.left - parentRect.left + offsetParent.scrollLeft;
-        newPosition.top =
-          clientRect.top - parentRect.top + offsetParent.scrollTop;
-        this.setState({ dragging: newPosition });
-        break;
-      }
-      case 'onDrag':
-        if (!this.state.dragging) {
-          throw new Error('onDrag called before onDragStart.');
-        }
-        newPosition.left = this.state.dragging.left + deltaX;
-        newPosition.top = this.state.dragging.top + deltaY;
-        this.setState({ dragging: newPosition });
-        break;
-      case 'onDragStop':
-        if (!this.state.dragging) {
-          throw new Error('onDragEnd called before onDragStart.');
-        }
-        newPosition.left = this.state.dragging.left;
-        newPosition.top = this.state.dragging.top;
-        this.setState({ dragging: null });
-        const { x, y } = this.calcXY(newPosition.top, newPosition.left);
-        // This gives me a better grid position
-        console.log(newPosition, x, y); // tslint:disable-line
-        console.log('old', this.state.top, this.state.left, 'new', x, y); // tslint:disable-line
-        // tell calendar that we have changed a plan's position
-        this.props.onUpdate(this.props.id, x, y, this.props.w, this.props.h);
-        if (x > cols) {
-          // this was a test to undestand how x, y and update work
-          const pos = this.calcPosition(x, y, 1, 1, this.state);
-          this.rnd.updatePosition({ x: (pos.left - 50), y: pos.top });
-        }
-        break;
-      default:
-        throw new Error(
-          'onDragHandler called with unrecognized handlerName: ' + handlerName
-        );
-      }
+  private handleDrag = (_: Event, { deltaX, deltaY }: IReactDraggableCallbackData) => {
+    if (!this.state.dragging) {
+      throw new Error('onDrag called before onDragStart.');
+    }
+    const newPosition: IPartialPosition = { top: 0, left: 0 };
+    newPosition.left = this.state.dragging.left + deltaX;
+    newPosition.top = this.state.dragging.top + deltaY;
+    this.setState({ dragging: newPosition });
+  }
 
-      // return handler.call(this, this.props.i, x, y, { e, node, newPosition });
-    };
+  private handleDragStop = (_: Event, {}: IReactDraggableCallbackData) => {
+    const newPosition: IPartialPosition = { top: 0, left: 0 };
+    if (!this.state.dragging) {
+      throw new Error('onDragEnd called before onDragStart.');
+    }
+    newPosition.left = this.state.dragging.left;
+    newPosition.top = this.state.dragging.top;
+    this.setState({ dragging: null });
+    const { x, y } = this.calcXY(newPosition.top, newPosition.left);
+    // tell calendar that we have changed a plan's position
+    this.props.onUpdate(this.props.id, x, y, this.props.w, this.props.h);
   }
 
   private handleResize() {
@@ -295,10 +284,7 @@ class CalendarItem extends Component<IProps, IState> {
 
       // this.setState({ resizing: handlerName === 'onResizeStop' ? null : size });
 
-      // if (handlerName === 'onResize') {
       this.props.onUpdate(id, x, y, w, h);
-      // }
-      // handler.call(this, i, w, h, { e, node, size });
     };
   }
 }
