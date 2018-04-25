@@ -47,7 +47,6 @@ class CalendarItem extends Component {
             this.setState({ dragging: null });
             const { x, y } = this.calcXY(newPosition.top, newPosition.left);
             // tell calendar that we have changed a plan's position
-            console.log(this.props.w, this.props.h); // tslint:disable-line
             this.props.onUpdate(this.props.id, x, y, this.props.w, this.props.h);
         };
         this.state = { top: 0, left: 0, bottom: 1 };
@@ -113,6 +112,7 @@ class CalendarItem extends Component {
         return 50;
     }
     render() {
+        const { children } = this.props;
         const { top, left } = this.state;
         // for now let RND store x, y, width, and height
         return (React.createElement(RND, { bounds: "parent", 
@@ -121,8 +121,7 @@ class CalendarItem extends Component {
             // ref={(c: any) => { this.rnd = c; }}
             resizeGrid: grid, 
             // size={{ width: 1, height: this.state.bottom }}
-            style: style },
-            React.createElement("div", null, "balls")));
+            style: style }, children));
     }
     calcXY(top, left) {
         const { cols } = this.props;
@@ -193,4 +192,4 @@ class CalendarItem extends Component {
     }
 }
 export default CalendarItem;
-//# sourceMappingURL=CalendarPlan.js.map
+//# sourceMappingURL=CalendarItem.js.map

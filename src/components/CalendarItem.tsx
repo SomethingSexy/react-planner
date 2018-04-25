@@ -22,10 +22,12 @@ interface IPosition {
 }
 
 interface IProps {
+  children: React.ReactNode;
   cols: number;
   id: string;
   h: number;
   onUpdate: Types.UpdatePlan;
+  // for now this is always going to be 1
   w: number;
   // starting x coordinate
   x: number;
@@ -34,6 +36,7 @@ interface IProps {
 }
 
 interface IState {
+  bottom: number;
   dragging?: {
     left: number;
     top: number;
@@ -44,7 +47,7 @@ interface IState {
 }
 
 const resize = {
-  top: true,
+  // top: true,
   bottom: true
 };
 
@@ -69,7 +72,8 @@ class CalendarItem extends Component<IProps, IState> {
 
     return {
       left,
-      top
+      top,
+      bottom: top + nextProps.h
     };
   }
 
@@ -138,10 +142,11 @@ class CalendarItem extends Component<IProps, IState> {
 
   constructor(props: IProps) {
     super(props);
-    this.state = { top: 0, left: 0 };
+    this.state = { top: 0, left: 0, bottom: 1 };
   }
 
   public render() {
+    const { children } = this.props;
     const { top, left } = this.state;
     // for now let RND store x, y, width, and height
     return (
@@ -159,9 +164,10 @@ class CalendarItem extends Component<IProps, IState> {
         position={{ x: left, y: top }}
         // ref={(c: any) => { this.rnd = c; }}
         resizeGrid={grid}
+        // size={{ width: 1, height: this.state.bottom }}
         style={style}
       >
-        <div>balls</div>
+        {children}
       </RND>
     );
   }
@@ -175,7 +181,6 @@ class CalendarItem extends Component<IProps, IState> {
     const margin = [0, 0];
     // const { margin, cols, rowHeight, w, h, maxRows } = this.props;
     const colWidth = CalendarItem.calcColWidth();
-    console.log('coloWidth', colWidth); // tslint:disable-line
     // left = colWidth * x + margin * (x + 1)
     // l = cx + m(x+1)
     // l = cx + mx + m
@@ -185,7 +190,6 @@ class CalendarItem extends Component<IProps, IState> {
     // x = (left - margin) / (coldWidth + margin)
     let x = Math.round((left - margin[0]) / (colWidth + margin[0]));
     let y = Math.round((top - margin[1]) / (rowHeight + margin[1]));
-    console.log('x', x); // tslint:disable-line
     // Capping
     x = Math.max(Math.min(x, cols - w), 0);
     y = Math.max(Math.min(y, maxRows - h), 0);
@@ -211,7 +215,6 @@ class CalendarItem extends Component<IProps, IState> {
     w = Math.round((width + margin[0]) / (colWidth + margin[0]));
     if (direction === 'bottom') { // tslint:disable-line prefer-conditional-expression
       h = Math.round((height + margin[1]) / (rowHeight + margin[1])) + this.props.h;
-      console.log(h); // tslint:disable-line
     } else {
       h = Math.round((height + margin[1]) / (rowHeight + margin[1]));
     }
@@ -219,7 +222,6 @@ class CalendarItem extends Component<IProps, IState> {
     // Capping
     w = Math.max(Math.min(w, cols - x), 0);
     h = Math.max(Math.min(h, maxRows - y), 0);
-    console.log(h); // tslint:disable-line
     return { w, h };
   }
 
@@ -270,7 +272,6 @@ class CalendarItem extends Component<IProps, IState> {
       const maxW = 500; // total rows
       const maxRows = 10;
       // Get new X
-      console.log(delta, direction); // tslint:disable-line
       let { w, h } = this.calcWH(delta, direction);
 
       // Cap w at numCols
@@ -281,8 +282,6 @@ class CalendarItem extends Component<IProps, IState> {
       // Min/max capping
       w = Math.max(Math.min(w, maxW), minW);
       h = Math.max(Math.min(h, maxRows), minH);
-
-      // this.setState({ resizing: handlerName === 'onResizeStop' ? null : size });
 
       this.props.onUpdate(id, x, y, w, h);
     };

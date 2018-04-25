@@ -1,9 +1,12 @@
 import invariant from 'invariant';
 import * as moment from 'moment';
-import React, { Component } from 'react';
+import React, { Component, ReactNode } from 'react';
 import { findDOMNode } from 'react-dom';
+import Modal from 'react-modal';
 import uuid from 'uuid';
-import CalendarItem from './components/CalendarPlan';
+import CalendarItem from './components/CalendarItem';
+import EditPlan from './components/EditPlan';
+import Plan from './components/Plan';
 import * as Types from './types';
 import elementFromPoint from './utils/elementFromPoint.js';
 import {
@@ -23,7 +26,11 @@ interface IProps {
   defaultPlanInterval?: number;
   end?: number;
   interval: string;
+  onUpdatePlans: (plans: Types.IPlan[]) => {};
   plans: Types.IPlan[];
+  renderPlan: Types.RenderPlan;
+  renderPlanEdit: Types.RenderPlanEdit;
+  renderModal: Types.RenderModal;
   start?: number;
 }
 
@@ -33,7 +40,8 @@ export interface IState {
   days: string[];
   grid: Types.IGrid;
   intervals: string[];
-  plans: Types.IPlan[];
+  selectedPlan: string | null;
+  highlightedPlan: string | null;
 }
 
 // TODO: We don't want to expose w,h,x,y but convert those to meaningful
@@ -92,16 +100,8 @@ class Calendar extends Component<IProps, IState> {
       intervals,
       cols: rangeDays.length,
       days: rangeDays,
-      plans: [{
-        id: '1',
-        // x: 0,
-        // y: 0,
-        // w: 1,
-        // h: 1,
-        time: 0,
-        toTime: 1,
-        date: '02/02/1985'
-      }]
+      selectedPlan: null,
+      highlightedPlan: null
     };
   }
 
@@ -109,11 +109,6 @@ class Calendar extends Component<IProps, IState> {
     // Get the width and height of a single box at the time
     // to use that to calculate rough grids
     const grid = findDOMNode(this.grid).getBoundingClientRect();
-    // tslint:disable-next-line
-    // console.log(window.pageXOffset, window.pageYOffset, window.pageYOffset + grid.top, window.pageXOffset + grid.left);
-    // const element = findDOMNode(this.spacer).getBoundingClientRect();
-    // grab the width and height to be able to calculate click positions
-    // const { width, height } = element;
 
     this.coordinates = {
       grid: {
@@ -124,11 +119,15 @@ class Calendar extends Component<IProps, IState> {
       width: Math.round(50)
     };
 
-    // document.addEventListener('keydown', (event: any) => {
-    //   if (event.keyCode === 27) {
-    //     this.handleCloseModal();
-    //   }
-    // });
+    document.addEventListener('keydown', (event: any) => {
+      if (event.keyCode === 27) {
+        this.handleCloseModal();
+      }
+    });
+  }
+
+  public componentWillUnmount() {
+    document.removeEventListener('keydown', this.handleCloseModal);
   }
 
   public render() {
@@ -136,18 +135,21 @@ class Calendar extends Component<IProps, IState> {
     const { cols } = this.state;
     const width = cols * 50;
     return (
-      <div>
-        {this.renderDays()}
-        {this.renderTimes()}
-        <div
-          className="planner-layout"
-          onDoubleClick={this.handleAddPlan}
-          ref={(ref: any) => { this.grid = ref; }}
-          style={{ position: 'relative', height: '500px', width: `${width}px`, left: '50px' }}
-        >
-          {this.renderPlans()}
+      <>
+        <div style={{ height: '100%' }}>
+          {this.renderDays()}
+          {this.renderTimes()}
+          <div
+            className="planner-layout"
+            onDoubleClick={this.handleAddPlan}
+            ref={(ref: any) => { this.grid = ref; }}
+            style={{ position: 'relative', height: '500px', width: `${width}px`, left: '50px' }}
+          >
+            {this.renderPlans()}
+          </div>
         </div>
-      </div>
+        {this.renderModal()}
+      </>
     );
   }
 
@@ -194,22 +196,83 @@ class Calendar extends Component<IProps, IState> {
   }
 
   private renderPlans() {
-    const { byDate, cols } = this.state;
+    const { plans, renderPlan } = this.props;
+    const { byDate, cols, highlightedPlan } = this.state;
     // TODO: type here
-    return this.state.plans.map((plan: any) => {
+    return plans.map((plan: any) => {
       return (
         <CalendarItem
           cols={cols}
-          h={plan.toTime}
+          h={plan.toTime - plan.time} // we want height here
           id={plan.id}
           key={plan.id}
-          onUpdate={this.handleUpdatePlan}
+          onUpdate={this.handleUpdateItem}
           x={byDate[plan.date]}
           w={1}
           y={plan.time}
-        />
+        >
+          <div key={plan.id} style={{ border: '1px solid #eee' }}>
+            <Plan
+              highlightedPlan={highlightedPlan}
+              highlightedPlan="1"
+              plan={plan}
+              onOpenPlan={this.handleOpenPlan}
+              onRemovePlan={this.handleRemovePlan}
+              onSelectPlan={this.handleSelectPlan}
+              render={renderPlan}
+            />
+          </div>
+        </CalendarItem>
       );
     });
+  }
+
+  private renderModal(): ReactNode {
+    const { selectedPlan } = this.state;
+
+    if (!selectedPlan) {
+      return null;
+    }
+
+    const { renderModal, plans } = this.props;
+    // TODO: not sure how I feel about this yet
+    // also the checks of plan below are kind of pointless
+    const plan = plans.find(p => p.id === selectedPlan);
+
+    if (!plan) {
+      return null;
+    }
+
+    if (renderModal) {
+      return renderModal(
+        plan,
+        {
+          renderPlanEdit: this.renderPlanEdit,
+          onClose: this.handleCloseModal
+        },
+        true
+      );
+    }
+
+    return (
+      <Modal
+        contentLabel="Edit Plan"
+        isOpen
+      >
+        {this.renderPlanEdit(plan)}
+      </Modal>
+    );
+  }
+
+  private renderPlanEdit = (selectedPlan: Types.IPlan): ReactNode => {
+    const { renderPlanEdit } = this.props;
+    return (
+      <EditPlan
+        onEditPlan={this.handlePlanUpdate}
+        plan={selectedPlan}
+        render={renderPlanEdit}
+      />
+    );
   }
 
   private getGrid(event: any): { x: number; y: number} {
@@ -242,55 +305,104 @@ class Calendar extends Component<IProps, IState> {
     const currentClick = elementFromPoint(event.clientX, event.clientY);
     // not a grid item
     if (currentClick.classList.contains('planner-layout')) {
-      const { byDate, grid, plans } = this.state;
-      // const { plans } = this.props;
+      const { byDate, grid } = this.state;
+      const { plans, onUpdatePlans } = this.props;
 
       const { x, y } = this.getGrid(event);
 
       const defaultTo = this.props.defaultPlanInterval || 1;
       const isValidAdd = canAdd(x, y, defaultTo, { byDate, grid }, plans);
-
       if (isValidAdd) {
         const { start, toTime, startTime } = isValidAdd;
-        this.setState({
-          plans: [
-            ...this.state.plans,
-            {
-              toTime,
-              id: uuid.v4(),
-              time: startTime,
-              date: start.day
-            }
-          ]
-        });
+
+        onUpdatePlans([
+          ...this.props.plans,
+          {
+            toTime,
+            id: uuid.v4(),
+            time: startTime,
+            date: start.day
+          }
+        ]);
       }
     }
   }
 
-  private handleUpdatePlan = (id: string, x: number, y: number, w: number, h: number) => {
-    const { byDate, grid, plans } = this.state;
-    const defaultTo = this.props.defaultPlanInterval || 1;
+  /**
+   * Updates a calendar item
+   */
+  private handleUpdateItem = (id: string, x: number, y: number, w: number, h: number) => {
+    const { onUpdatePlans, plans } = this.props;
+    const { byDate, grid } = this.state;
 
-    const isValidAdd = canMove(id, x, y, defaultTo, { byDate, grid }, plans);
+    const isValidMove = canMove(id, x, y, h, { byDate, grid }, plans);
 
-    if (isValidAdd) {
-      const updatedPlans = this.state.plans.map((plan: any) => {
+    if (isValidMove) {
+      const updatedPlans = plans.map((plan: any) => {
         if (plan.id !== id) {
           return plan;
         }
-
         return {
           ...plan,
           w,
-          toTime: h,
+          toTime: y + h,
           date: this.state.grid[x][y].day,
           time: y
         };
       });
 
       // for now set the state, but this should get switched out for call updater func
-      this.setState({ plans: updatedPlans });
+      onUpdatePlans(updatedPlans);
     }
+  }
+
+  /**
+   * Handles updating a plan with key and value.  All properties will
+   * be stored at the root level.  It is up to the user to make sure
+   * everything is in sync with the edit components.
+   */
+  private handlePlanUpdate = (id: string, name: string, value: any) => {
+    const { onUpdatePlans, plans } = this.props;
+    const updatedPlans = plans.map(plan => {
+      if (plan.id !== id) {
+        return plan;
+      }
+
+      return {
+        ...plan,
+        [name]: value
+      };
+    });
+
+    onUpdatePlans(updatedPlans);
+  }
+
+  private handleOpenPlan = (id: string) => {
+    this.setState({ selectedPlan: id });
+  }
+
+  private handleSelectPlan = (id: string) => {
+    this.setState({ highlightedPlan: id });
+  }
+
+  private handleCloseModal = () => {
+    this.setState({ selectedPlan: null });
+  }
+
+  private handleRemovePlan = (id: string) => {
+    const { plans, onUpdatePlans } = this.props;
+    const index = plans.findIndex(plan => plan.id === id);
+    let updatedPlans;
+    if (index === 0) {
+      updatedPlans = plans.slice(index + 1);
+    } else {
+      updatedPlans = [
+        ...plans.slice(0, index),
+        ...plans.slice(index + 1)
+      ];
+    }
+
+    onUpdatePlans(updatedPlans);
   }
 }
 

@@ -203,8 +203,6 @@ export default class Planner extends Component {
         // Get the width and height of a single box at the time
         // to use that to calculate rough grids
         const grid = findDOMNode(this.grid).getBoundingClientRect();
-        // tslint:disable-next-line
-        // console.log(window.pageXOffset, window.pageYOffset, window.pageYOffset + grid.top, window.pageXOffset + grid.left);
         const element = findDOMNode(this.spacer).getBoundingClientRect();
         // grab the width and height to be able to calculate click positions
         const { width, height } = element;

@@ -2,8 +2,11 @@ import invariant from 'invariant';
 import * as moment from 'moment';
 import React, { Component } from 'react';
 import { findDOMNode } from 'react-dom';
+import Modal from 'react-modal';
 import uuid from 'uuid';
-import CalendarItem from './components/CalendarPlan';
+import CalendarItem from './components/CalendarItem';
+import EditPlan from './components/EditPlan';
+import Plan from './components/Plan';
 import elementFromPoint from './utils/elementFromPoint.js';
 import { calculateIntervals, canAdd, canMove, createLookupTables, range } from './utils/planner';
 const intervalMatch = /(\d+)(m|h)+/;
@@ -15,45 +18,89 @@ class Calendar extends Component {
     constructor(props) {
         super(props);
         this.coordinates = null;
+        this.renderPlanEdit = (selectedPlan) => {
+            const { renderPlanEdit } = this.props;
+            return (React.createElement(EditPlan, { onEditPlan: this.handlePlanUpdate, plan: selectedPlan, render: renderPlanEdit }));
+        };
         this.handleAddPlan = (event) => {
             const currentClick = elementFromPoint(event.clientX, event.clientY);
             // not a grid item
             if (currentClick.classList.contains('planner-layout')) {
-                const { byDate, grid, plans } = this.state;
-                // const { plans } = this.props;
+                const { byDate, grid } = this.state;
+                const { plans, onUpdatePlans } = this.props;
                 const { x, y } = this.getGrid(event);
                 const defaultTo = this.props.defaultPlanInterval || 1;
                 const isValidAdd = canAdd(x, y, defaultTo, { byDate, grid }, plans);
                 if (isValidAdd) {
                     const { start, toTime, startTime } = isValidAdd;
-                    this.setState({
-                        plans: [
-                            ...this.state.plans,
-                            {
-                                toTime,
-                                id: uuid.v4(),
-                                time: startTime,
-                                date: start.day
-                            }
-                        ]
-                    });
+                    onUpdatePlans([
+                        ...this.props.plans,
+                        {
+                            toTime,
+                            id: uuid.v4(),
+                            time: startTime,
+                            date: start.day
+                        }
+                    ]);
                 }
             }
         };
-        this.handleUpdatePlan = (id, x, y, w, h) => {
-            const { byDate, grid, plans } = this.state;
-            const defaultTo = this.props.defaultPlanInterval || 1;
-            const isValidAdd = canMove(id, x, y, defaultTo, { byDate, grid }, plans);
-            if (isValidAdd) {
-                const updatedPlans = this.state.plans.map((plan) => {
+        /**
+         * Updates a calendar item
+         */
+        this.handleUpdateItem = (id, x, y, w, h) => {
+            const { onUpdatePlans, plans } = this.props;
+            const { byDate, grid } = this.state;
+            const isValidMove = canMove(id, x, y, h, { byDate, grid }, plans);
+            if (isValidMove) {
+                const updatedPlans = plans.map((plan) => {
                     if (plan.id !== id) {
                         return plan;
                     }
-                    return Object.assign({}, plan, { w, toTime: h, date: this.state.grid[x][y].day, time: y });
+                    return Object.assign({}, plan, { w, toTime: y + h, date: this.state.grid[x][y].day, time: y });
                 });
                 // for now set the state, but this should get switched out for call updater func
-                this.setState({ plans: updatedPlans });
+                onUpdatePlans(updatedPlans);
             }
+        };
+        /**
+         * Handles updating a plan with key and value.  All properties will
+         * be stored at the root level.  It is up to the user to make sure
+         * everything is in sync with the edit components.
+         */
+        this.handlePlanUpdate = (id, name, value) => {
+            const { onUpdatePlans, plans } = this.props;
+            const updatedPlans = plans.map(plan => {
+                if (plan.id !== id) {
+                    return plan;
+                }
+                return Object.assign({}, plan, { [name]: value });
+            });
+            onUpdatePlans(updatedPlans);
+        };
+        this.handleOpenPlan = (id) => {
+            this.setState({ selectedPlan: id });
+        };
+        this.handleSelectPlan = (id) => {
+            this.setState({ highlightedPlan: id });
+        };
+        this.handleCloseModal = () => {
+            this.setState({ selectedPlan: null });
+        };
+        this.handleRemovePlan = (id) => {
+            const { plans, onUpdatePlans } = this.props;
+            const index = plans.findIndex(plan => plan.id === id);
+            let updatedPlans;
+            if (index === 0) {
+                updatedPlans = plans.slice(index + 1);
+            }
+            else {
+                updatedPlans = [
+                    ...plans.slice(0, index),
+                    ...plans.slice(index + 1)
+                ];
+            }
+            onUpdatePlans(updatedPlans);
         };
         const { days, end = 24, dateStart, dateEnd, interval = '5m', start = 6 } = props;
         // TODO: Update this so the dateState is required but endDate can be optional or
@@ -81,27 +128,14 @@ class Calendar extends Component {
             intervals,
             cols: rangeDays.length,
             days: rangeDays,
-            plans: [{
-                    id: '1',
-                    // x: 0,
-                    // y: 0,
-                    // w: 1,
-                    // h: 1,
-                    time: 0,
-                    toTime: 1,
-                    date: '02/02/1985'
-                }]
+            selectedPlan: null,
+            highlightedPlan: null
         };
     }
     componentDidMount() {
         // Get the width and height of a single box at the time
         // to use that to calculate rough grids
         const grid = findDOMNode(this.grid).getBoundingClientRect();
-        // tslint:disable-next-line
-        // console.log(window.pageXOffset, window.pageYOffset, window.pageYOffset + grid.top, window.pageXOffset + grid.left);
-        // const element = findDOMNode(this.spacer).getBoundingClientRect();
-        // grab the width and height to be able to calculate click positions
-        // const { width, height } = element;
         this.coordinates = {
             grid: {
                 x: window.pageXOffset + grid.left,
@@ -110,20 +144,25 @@ class Calendar extends Component {
             height: Math.round(50),
             width: Math.round(50)
         };
-        // document.addEventListener('keydown', (event: any) => {
-        //   if (event.keyCode === 27) {
-        //     this.handleCloseModal();
-        //   }
-        // });
+        document.addEventListener('keydown', (event) => {
+            if (event.keyCode === 27) {
+                this.handleCloseModal();
+            }
+        });
+    }
+    componentWillUnmount() {
+        document.removeEventListener('keydown', this.handleCloseModal);
     }
     render() {
         // TODO: width height should be based off columns, etc
         const { cols } = this.state;
         const width = cols * 50;
-        return (React.createElement("div", null,
-            this.renderDays(),
-            this.renderTimes(),
-            React.createElement("div", { className: "planner-layout", onDoubleClick: this.handleAddPlan, ref: (ref) => { this.grid = ref; }, style: { position: 'relative', height: '500px', width: `${width}px`, left: '50px' } }, this.renderPlans())));
+        return (React.createElement(React.Fragment, null,
+            React.createElement("div", { style: { height: '100%' } },
+                this.renderDays(),
+                this.renderTimes(),
+                React.createElement("div", { className: "planner-layout", onDoubleClick: this.handleAddPlan, ref: (ref) => { this.grid = ref; }, style: { position: 'relative', height: '500px', width: `${width}px`, left: '50px' } }, this.renderPlans())),
+            this.renderModal()));
     }
     renderDays() {
         const { days } = this.state;
@@ -144,11 +183,38 @@ class Calendar extends Component {
         return (React.createElement("div", { style: { width: '50px' } }, renderedIntervals));
     }
     renderPlans() {
+        const { plans, renderPlan } = this.props;
         const { byDate, cols } = this.state;
         // TODO: type here
-        return this.state.plans.map((plan) => {
-            return (React.createElement(CalendarItem, { cols: cols, h: plan.toTime, id: plan.id, key: plan.id, onUpdate: this.handleUpdatePlan, x: byDate[plan.date], w: 1, y: plan.time }));
+        return plans.map((plan) => {
+            return (React.createElement(CalendarItem, { cols: cols, h: plan.toTime - plan.time, id: plan.id, key: plan.id, onUpdate: this.handleUpdateItem, x: byDate[plan.date], w: 1, y: plan.time },
+                React.createElement("div", { key: plan.id, style: { border: '1px solid #eee' } },
+                    React.createElement(Plan
+                    // highlightedPlan={highlightedPlan}
+                    , { 
+                        // highlightedPlan={highlightedPlan}
+                        highlightedPlan: "1", plan: plan, onOpenPlan: this.handleOpenPlan, onRemovePlan: this.handleRemovePlan, onSelectPlan: this.handleSelectPlan, render: renderPlan }))));
         });
+    }
+    renderModal() {
+        const { selectedPlan } = this.state;
+        if (!selectedPlan) {
+            return null;
+        }
+        const { renderModal, plans } = this.props;
+        // TODO: not sure how I feel about this yet
+        // also the checks of plan below are kind of pointless
+        const plan = plans.find(p => p.id === selectedPlan);
+        if (!plan) {
+            return null;
+        }
+        if (renderModal) {
+            return renderModal(plan, {
+                renderPlanEdit: this.renderPlanEdit,
+                onClose: this.handleCloseModal
+            }, true);
+        }
+        return (React.createElement(Modal, { contentLabel: "Edit Plan", isOpen: true }, this.renderPlanEdit(plan)));
     }
     getGrid(event) {
         const coordinates = this.coordinates;

@@ -98,7 +98,7 @@ export const getPlansByDate = (plans: Types.IPlan[], date: string) =>
     .filter(plan => plan.date === date)
     .sort((a, b) => a.time - b.time);
 
-const collided = (y: number, interval: number, plans: Types.IPlan[]) =>
+const collided = (y: number, _: number, plans: Types.IPlan[]) =>
   !!plans.find(plan => {
     // need to check if the plan crosses any other plan.
     // if they start at the same time
@@ -107,7 +107,7 @@ const collided = (y: number, interval: number, plans: Types.IPlan[]) =>
     }
     // now check if the end time of the new plan will cross over
     // to an existing plan
-    return (y + interval) > plan.time && (y + interval) <= plan.toTime;
+    return y > plan.time && y < plan.toTime;
   });
 
 export const isValidTime = (x: number, y: number, lookup: Types.ILookup) => {
@@ -169,11 +169,11 @@ export const canAdd =
   };
 
 export const canMove = (
-  id: string, x: number, y: number, interval: number, lookup: Types.ILookup, plans: Types.IPlan[]
+  id: string, x: number, y: number, h: number, lookup: Types.ILookup, plans: Types.IPlan[]
 ) => {
   const dateLookup = x;
   const stateTimeLookup = y;
-  const toTimeLookup = y + interval;
+  const toTimeLookup = h;
 
   if (!isValidTime(dateLookup, stateTimeLookup, lookup)
     || !isValidTime(dateLookup, toTimeLookup, lookup)) {
@@ -185,8 +185,7 @@ export const canMove = (
   const datePlans = getPlansByDate(plans, date.day).filter(plan => plan.id !== id);
 
   // check if this would collide with another plan
-  const collision = collided(y, interval, datePlans);
-
+  const collision = collided(y, h, datePlans);
   return !collision;
 };
 
