@@ -1,6 +1,5 @@
 import { uniq } from 'lodash';
 import * as moment from 'moment';
-import uuid from 'uuid';
 import { DOWN, LEFT, RIGHT, UP } from '../constants';
 const MINUTES = 60;
 // TODO: worry about locale here
@@ -32,11 +31,6 @@ export const createLookupTables = (days, intervals) => {
     };
 };
 /**
- * @deprecated
- * @param intervals
- */
-export const gridTimes = (intervals) => intervals.map((time, index) => ({ time, static: true, x: 0, y: index + 1, w: 1, h: 1, i: uuid.v4() }));
-/**
  * Returns a filled array of numbers (as a string type) given the total.
  * @param total
  */
@@ -52,27 +46,6 @@ export const range = (startDate, endDate) => {
     }
     return filledDates;
 };
-/**
- * @deprecated
- * @param days
- */
-export const gridDays = (days) => days.map((day, index) => ({ day, x: index + 1, y: 0, w: 1, h: 1, static: true, key: uuid.v4() }));
-export const gridPlans = (plans, lookup) => plans.map(plan => {
-    const dateIndex = lookup.byDate[plan.date];
-    // const dayTime = lookup.grid[dateIndex][plan.time];
-    // const toTime = lookup.grid[dateIndex][plan.toTime];
-    const height = plan.toTime - plan.time;
-    return {
-        h: height || 1,
-        i: plan.id,
-        // time: `${dayTime.time} - ${toTime.time}`,
-        w: 1,
-        x: dateIndex + 1,
-        y: plan.time + 1,
-        minW: 1,
-        maxW: 1
-    };
-});
 export const getPlansByDate = (plans, date) => plans
     .filter(plan => plan.date === date)
     .sort((a, b) => a.time - b.time);
@@ -82,9 +55,6 @@ const collided = (y, h, plans) => !!plans.find(plan => {
     if (plan.time === y) {
         return true;
     }
-    // now check if the end time of the new plan will cross over
-    // to an existing plan
-    // return (y > plan.time && y < plan.toTime) || (plan.time < y && plan.toTime > h);
     return (plan.time > y && plan.toTime < h) // checks if larger going over smaller
         || (y > plan.time && y < plan.toTime); // checks if smaller going into larger
 });
