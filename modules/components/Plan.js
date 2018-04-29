@@ -4,7 +4,7 @@ const style = {
     height: '100%',
     width: '100%',
     backgroundColor: 'white',
-    textAlign: 'center',
+    // textAlign: 'center',
     color: 'inherit',
     cursor: 'pointer'
 };

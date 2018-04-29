@@ -9,11 +9,10 @@ const style = {
     alignItems: 'center',
     justifyContent: 'center',
     border: 'solid 1px #ddd',
-    background: '#f0f0f0',
+    background: '#f0f0f0'
 };
-const grid = [50, 50];
+const grid = [100, 50];
 class CalendarItem extends Component {
-    // private rnd: any;
     constructor(props) {
         super(props);
         this.handleDragStart = (_, { node }) => {
@@ -57,7 +56,8 @@ class CalendarItem extends Component {
      * @param nextState
      */
     static getDerivedStateFromProps(nextProps, nextState) {
-        const { top, left } = CalendarItem.calcPosition(nextProps.x, nextProps.y, 50, 50, nextState);
+        const { top, left } = CalendarItem
+            .calcPosition(nextProps.x, nextProps.y, 50, 50, nextProps.containerWidth, nextProps.containerHeight, nextState);
         return {
             left,
             top,
@@ -72,11 +72,11 @@ class CalendarItem extends Component {
      * @param h
      * @param state
      */
-    static calcPosition(x, y, w, h, state) {
+    static calcPosition(x, y, w, h, containerWidth, containerHeight, state) {
         const containerPadding = [0, 0];
-        const rowHeight = 50;
+        const rowHeight = containerHeight;
         const margin = [0, 0];
-        const colWidth = this.calcColWidth();
+        const colWidth = CalendarItem.calcColWidth(containerWidth);
         const out = {
             left: Math.round((colWidth + margin[0]) * x + containerPadding[0]),
             top: Math.round((rowHeight + margin[1]) * y + containerPadding[1]),
@@ -100,38 +100,31 @@ class CalendarItem extends Component {
         }
         return out;
     }
-    static calcColWidth() {
+    static calcColWidth(containerWidth) {
         // const cols = 10;
         // const containerWidth = 50;
         // const containerPadding = [0, 0];
         // const margin = [0, 0];
-        // // const { margin, containerPadding, containerWidth, cols } = this.props;
+        // const { margin, containerPadding, containerWidth, cols } = this.props;
         // return (
         //   (containerWidth - margin[0] * (cols - 1) - containerPadding[0] * 2) / cols
         // );
-        return 50;
+        return containerWidth;
     }
     render() {
-        const { children } = this.props;
+        const { children, containerHeight, containerWidth } = this.props;
         const { top, left } = this.state;
         // for now let RND store x, y, width, and height
-        return (React.createElement(RND, { bounds: "parent", 
-            // default={{ x: left, y: top, width: 50, height: 50 }}
-            dragGrid: grid, enableResizing: resize, minWidth: 50, minHeight: 50, onDragStart: this.handleDragStart, onDrag: this.handleDrag, onDragStop: this.handleDragStop, onResizeStop: this.handleResize(), position: { x: left, y: top }, 
-            // ref={(c: any) => { this.rnd = c; }}
-            resizeGrid: grid, 
-            // size={{ width: 1, height: this.state.bottom }}
-            style: style }, children));
+        return (React.createElement(RND, { bounds: "parent", default: { height: `${containerHeight}px` }, dragGrid: grid, enableResizing: resize, height: containerHeight, maxWidth: containerWidth, minWidth: containerWidth, minHeight: containerHeight, onDragStart: this.handleDragStart, onDrag: this.handleDrag, onDragStop: this.handleDragStop, onResizeStop: this.handleResize(), position: { x: left, y: top }, resizeGrid: grid, style: style }, children));
     }
     calcXY(top, left) {
-        const { cols } = this.props;
-        const rowHeight = 50;
+        const { cols, containerHeight, containerWidth } = this.props;
         const w = 1;
         const h = 1;
         const maxRows = 10;
         const margin = [0, 0];
         // const { margin, cols, rowHeight, w, h, maxRows } = this.props;
-        const colWidth = CalendarItem.calcColWidth();
+        const colWidth = CalendarItem.calcColWidth(containerWidth);
         // left = colWidth * x + margin * (x + 1)
         // l = cx + m(x+1)
         // l = cx + mx + m
@@ -140,19 +133,18 @@ class CalendarItem extends Component {
         // (l - m) / (c + m) = x
         // x = (left - margin) / (coldWidth + margin)
         let x = Math.round((left - margin[0]) / (colWidth + margin[0]));
-        let y = Math.round((top - margin[1]) / (rowHeight + margin[1]));
+        let y = Math.round((top - margin[1]) / (containerHeight + margin[1]));
         // Capping
         x = Math.max(Math.min(x, cols - w), 0);
         y = Math.max(Math.min(y, maxRows - h), 0);
         return { x, y };
     }
     calcWH({ height, width }, direction) {
-        const { cols } = this.props;
-        const rowHeight = 50;
+        const { cols, containerHeight, containerWidth } = this.props;
         const maxRows = 10;
         const margin = [0, 0];
         const { x, y } = this.props;
-        const colWidth = CalendarItem.calcColWidth();
+        const colWidth = CalendarItem.calcColWidth(containerWidth);
         let w;
         let h;
         // width = colWidth * w - (margin * (w - 1))
@@ -160,10 +152,10 @@ class CalendarItem extends Component {
         // w = (width + margin) / (colWidth + margin)
         w = Math.round((width + margin[0]) / (colWidth + margin[0]));
         if (direction === 'bottom') {
-            h = Math.round((height + margin[1]) / (rowHeight + margin[1])) + this.props.h;
+            h = Math.round((height + margin[1]) / (containerHeight + margin[1])) + this.props.h;
         }
         else {
-            h = Math.round((height + margin[1]) / (rowHeight + margin[1]));
+            h = Math.round((height + margin[1]) / (containerHeight + margin[1]));
         }
         // Capping
         w = Math.max(Math.min(w, cols - x), 0);

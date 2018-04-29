@@ -51,6 +51,8 @@ export interface IState {
 class Calendar extends Component<IProps, IState> {
   private grid: any;
   private coordinates: Types.ICoordinates | null = null;
+  private containerWidth: number = 100;
+  private containerHeight: number = 50;
 
   constructor(props: IProps) {
     super(props);
@@ -115,8 +117,8 @@ class Calendar extends Component<IProps, IState> {
         x: window.pageXOffset + grid.left,
         y: window.pageYOffset + grid.top
       },
-      height: Math.round(50),
-      width: Math.round(50)
+      height: Math.round(this.containerHeight),
+      width: Math.round(this.containerWidth)
     };
 
     document.addEventListener('keydown', (event: any) => {
@@ -133,7 +135,8 @@ class Calendar extends Component<IProps, IState> {
   public render() {
     // TODO: width height should be based off columns, etc
     const { cols } = this.state;
-    const width = cols * 50;
+    const offset = `${this.containerWidth}px`;
+    const width = `${cols * this.containerWidth}px`;
     return (
       <>
         <div style={{ height: '100%' }}>
@@ -143,7 +146,7 @@ class Calendar extends Component<IProps, IState> {
             className="planner-layout"
             onDoubleClick={this.handleAddPlan}
             ref={(ref: any) => { this.grid = ref; }}
-            style={{ position: 'relative', height: '500px', width: `${width}px`, left: '50px' }}
+            style={{ width, position: 'relative', height: '500px', left: offset }}
           >
             {this.renderPlans()}
           </div>
@@ -155,12 +158,13 @@ class Calendar extends Component<IProps, IState> {
 
   private renderDays() {
     const { days } = this.state;
-    const offset = 50;
+    const offset = this.containerWidth;
+    const width = `${offset}px`;
     const renderedDays = days.map((day, index) => {
       return (
         <div
           key={day}
-          style={{ left: `${index * 50}px`, width: '50px', display: 'inline-block' }}
+          style={{ width, left: `${index * offset}px`, display: 'inline-block' }}
         >
           <p style={{ textOverflow: 'ellipsis', overflow: 'hidden' }}>{day}</p>
         </div>
@@ -176,12 +180,15 @@ class Calendar extends Component<IProps, IState> {
 
   private renderTimes() {
     const { intervals } = this.state;
-    const offset = 50;
+    const offset = this.containerWidth;
+    const heightOffset = this.containerHeight;
+    const height = `${heightOffset}px`;
+    const width = `${offset}px`;
     const renderedIntervals = intervals.map((interval, index) => {
       return (
         <div
           key={interval}
-          style={{ top: `${index * 50 + offset}px`, height: '50px', width: '50px', float: 'left' }}
+          style={{ height, width, top: `${index * 25 + offset}px`, float: 'left' }}
         >
           <p style={{ textOverflow: 'ellipsis', overflow: 'hidden' }}>{interval}</p>
         </div>
@@ -189,7 +196,7 @@ class Calendar extends Component<IProps, IState> {
     });
 
     return (
-      <div style={{ width: '50px' }}>
+      <div style={{ width }}>
         {renderedIntervals}
       </div>
     );
@@ -203,6 +210,8 @@ class Calendar extends Component<IProps, IState> {
       return (
         <CalendarItem
           cols={cols}
+          containerHeight={this.containerHeight}
+          containerWidth={this.containerWidth}
           h={plan.toTime - plan.time} // we want height here
           id={plan.id}
           key={plan.id}
@@ -211,17 +220,15 @@ class Calendar extends Component<IProps, IState> {
           w={1}
           y={plan.time}
         >
-          <div key={plan.id} style={{ border: '1px solid #eee' }}>
-            <Plan
-              highlightedPlan={highlightedPlan}
-              highlightedPlan="1"
-              plan={plan}
-              onOpenPlan={this.handleOpenPlan}
-              onRemovePlan={this.handleRemovePlan}
-              onSelectPlan={this.handleSelectPlan}
-              render={renderPlan}
-            />
-          </div>
+          <Plan
+            highlightedPlan={highlightedPlan}
+            key={plan.id}
+            plan={plan}
+            onOpenPlan={this.handleOpenPlan}
+            onRemovePlan={this.handleRemovePlan}
+            onSelectPlan={this.handleSelectPlan}
+            render={renderPlan}
+          />
         </CalendarItem>
       );
     });

@@ -18,6 +18,8 @@ class Calendar extends Component {
     constructor(props) {
         super(props);
         this.coordinates = null;
+        this.containerWidth = 100;
+        this.containerHeight = 50;
         this.renderPlanEdit = (selectedPlan) => {
             const { renderPlanEdit } = this.props;
             return (React.createElement(EditPlan, { onEditPlan: this.handlePlanUpdate, plan: selectedPlan, render: renderPlanEdit }));
@@ -141,8 +143,8 @@ class Calendar extends Component {
                 x: window.pageXOffset + grid.left,
                 y: window.pageYOffset + grid.top
             },
-            height: Math.round(50),
-            width: Math.round(50)
+            height: Math.round(this.containerHeight),
+            width: Math.round(this.containerWidth)
         };
         document.addEventListener('keydown', (event) => {
             if (event.keyCode === 27) {
@@ -156,44 +158,44 @@ class Calendar extends Component {
     render() {
         // TODO: width height should be based off columns, etc
         const { cols } = this.state;
-        const width = cols * 50;
+        const offset = `${this.containerWidth}px`;
+        const width = `${cols * this.containerWidth}px`;
         return (React.createElement(React.Fragment, null,
             React.createElement("div", { style: { height: '100%' } },
                 this.renderDays(),
                 this.renderTimes(),
-                React.createElement("div", { className: "planner-layout", onDoubleClick: this.handleAddPlan, ref: (ref) => { this.grid = ref; }, style: { position: 'relative', height: '500px', width: `${width}px`, left: '50px' } }, this.renderPlans())),
+                React.createElement("div", { className: "planner-layout", onDoubleClick: this.handleAddPlan, ref: (ref) => { this.grid = ref; }, style: { width, position: 'relative', height: '500px', left: offset } }, this.renderPlans())),
             this.renderModal()));
     }
     renderDays() {
         const { days } = this.state;
-        const offset = 50;
+        const offset = this.containerWidth;
+        const width = `${offset}px`;
         const renderedDays = days.map((day, index) => {
-            return (React.createElement("div", { key: day, style: { left: `${index * 50}px`, width: '50px', display: 'inline-block' } },
+            return (React.createElement("div", { key: day, style: { width, left: `${index * offset}px`, display: 'inline-block' } },
                 React.createElement("p", { style: { textOverflow: 'ellipsis', overflow: 'hidden' } }, day)));
         });
         return (React.createElement("div", { style: { position: 'relative', left: `${offset}px` } }, renderedDays));
     }
     renderTimes() {
         const { intervals } = this.state;
-        const offset = 50;
+        const offset = this.containerWidth;
+        const heightOffset = this.containerHeight;
+        const height = `${heightOffset}px`;
+        const width = `${offset}px`;
         const renderedIntervals = intervals.map((interval, index) => {
-            return (React.createElement("div", { key: interval, style: { top: `${index * 50 + offset}px`, height: '50px', width: '50px', float: 'left' } },
+            return (React.createElement("div", { key: interval, style: { height, width, top: `${index * 25 + offset}px`, float: 'left' } },
                 React.createElement("p", { style: { textOverflow: 'ellipsis', overflow: 'hidden' } }, interval)));
         });
-        return (React.createElement("div", { style: { width: '50px' } }, renderedIntervals));
+        return (React.createElement("div", { style: { width } }, renderedIntervals));
     }
     renderPlans() {
         const { plans, renderPlan } = this.props;
-        const { byDate, cols } = this.state;
+        const { byDate, cols, highlightedPlan } = this.state;
         // TODO: type here
         return plans.map((plan) => {
-            return (React.createElement(CalendarItem, { cols: cols, h: plan.toTime - plan.time, id: plan.id, key: plan.id, onUpdate: this.handleUpdateItem, x: byDate[plan.date], w: 1, y: plan.time },
-                React.createElement("div", { key: plan.id, style: { border: '1px solid #eee' } },
-                    React.createElement(Plan
-                    // highlightedPlan={highlightedPlan}
-                    , { 
-                        // highlightedPlan={highlightedPlan}
-                        highlightedPlan: "1", plan: plan, onOpenPlan: this.handleOpenPlan, onRemovePlan: this.handleRemovePlan, onSelectPlan: this.handleSelectPlan, render: renderPlan }))));
+            return (React.createElement(CalendarItem, { cols: cols, containerHeight: this.containerHeight, containerWidth: this.containerWidth, h: plan.toTime - plan.time, id: plan.id, key: plan.id, onUpdate: this.handleUpdateItem, x: byDate[plan.date], w: 1, y: plan.time },
+                React.createElement(Plan, { highlightedPlan: highlightedPlan, key: plan.id, plan: plan, onOpenPlan: this.handleOpenPlan, onRemovePlan: this.handleRemovePlan, onSelectPlan: this.handleSelectPlan, render: renderPlan })));
         });
     }
     renderModal() {
