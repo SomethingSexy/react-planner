@@ -76,7 +76,7 @@ export const gridPlans = (plans, lookup) => plans.map(plan => {
 export const getPlansByDate = (plans, date) => plans
     .filter(plan => plan.date === date)
     .sort((a, b) => a.time - b.time);
-const collided = (y, _, plans) => !!plans.find(plan => {
+const collided = (y, h, plans) => !!plans.find(plan => {
     // need to check if the plan crosses any other plan.
     // if they start at the same time
     if (plan.time === y) {
@@ -84,7 +84,9 @@ const collided = (y, _, plans) => !!plans.find(plan => {
     }
     // now check if the end time of the new plan will cross over
     // to an existing plan
-    return y > plan.time && y < plan.toTime;
+    // return (y > plan.time && y < plan.toTime) || (plan.time < y && plan.toTime > h);
+    return (plan.time > y && plan.toTime < h) // checks if larger going over smaller
+        || (y > plan.time && y < plan.toTime); // checks if smaller going into larger
 });
 export const isValidTime = (x, y, lookup) => {
     return !!lookup.grid[x][y];
@@ -145,7 +147,7 @@ export const canMove = (id, x, y, h, lookup, plans) => {
     // grab the plans for this date, sorted by time, filter out the plan we are moving
     const datePlans = getPlansByDate(plans, date.day).filter(plan => plan.id !== id);
     // check if this would collide with another plan
-    const collision = collided(y, h, datePlans);
+    const collision = collided(y, y + h, datePlans);
     return !collision;
 };
 export const getClosestPlan = (id, plans, direction) => {
