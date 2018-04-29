@@ -2,14 +2,24 @@ import invariant from 'invariant';
 import * as moment from 'moment';
 import React, { Component } from 'react';
 import { findDOMNode } from 'react-dom';
+import { HotKeys } from 'react-hotkeys';
 import Modal from 'react-modal';
 import uuid from 'uuid';
 import CalendarItem from './components/CalendarItem';
 import EditPlan from './components/EditPlan';
 import Plan from './components/Plan';
+import { DOWN, LEFT, RIGHT, UP } from './constants';
 import elementFromPoint from './utils/elementFromPoint.js';
-import { calculateIntervals, canAdd, canMove, createLookupTables, range } from './utils/planner';
+import { calculateIntervals, canAdd, canMove, createLookupTables, getClosestPlan, range } from './utils/planner';
 const intervalMatch = /(\d+)(m|h)+/;
+const keyMap = {
+    deleteNode: ['del', 'backspace'],
+    moveNodeUp: [UP],
+    moveNodeDown: [DOWN],
+    moveNodeRight: [RIGHT],
+    moveNodeLeft: [LEFT],
+    openNode: ['enter']
+};
 // TODO: We don't want to expose w,h,x,y but convert those to meaningful
 // things.  How much information do we want to leave to the rnd state
 // vs control ourselves.  Or do we want to look that information up
@@ -45,6 +55,22 @@ class Calendar extends Component {
                         }
                     ]);
                 }
+            }
+        };
+        this.handleMoveHighlightedPlan = (direction) => {
+            const { highlightedPlan } = this.state;
+            const { plans } = this.props;
+            if (highlightedPlan) {
+                const moveTo = getClosestPlan(highlightedPlan, plans, direction);
+                if (moveTo) {
+                    this.setState({ highlightedPlan: moveTo });
+                }
+            }
+        };
+        this.handleRemoveHighlightedPlan = () => {
+            const { highlightedPlan } = this.state;
+            if (highlightedPlan) {
+                this.handleRemovePlan(highlightedPlan);
             }
         };
         /**
@@ -133,6 +159,13 @@ class Calendar extends Component {
             selectedPlan: null,
             highlightedPlan: null
         };
+        this.handlers = {
+            deleteNode: this.handleRemoveHighlightedPlan,
+            moveNodeUp: this.handleMoveHighlightedPlan.bind(this.handleMoveHighlightedPlan, UP),
+            moveNodeDown: this.handleMoveHighlightedPlan.bind(this.handleMoveHighlightedPlan, DOWN),
+            moveNodeRight: this.handleMoveHighlightedPlan.bind(this.handleMoveHighlightedPlan, RIGHT),
+            moveNodeLeft: this.handleMoveHighlightedPlan.bind(this.handleMoveHighlightedPlan, LEFT)
+        };
     }
     componentDidMount() {
         // Get the width and height of a single box at the time
@@ -164,7 +197,8 @@ class Calendar extends Component {
             React.createElement("div", { style: { height: '100%' } },
                 this.renderDays(),
                 this.renderTimes(),
-                React.createElement("div", { className: "planner-layout", onDoubleClick: this.handleAddPlan, ref: (ref) => { this.grid = ref; }, style: { width, position: 'relative', height: '500px', left: offset } }, this.renderPlans())),
+                React.createElement(HotKeys, { handlers: this.handlers, keyMap: keyMap },
+                    React.createElement("div", { className: "planner-layout", onDoubleClick: this.handleAddPlan, ref: (ref) => { this.grid = ref; }, style: { width, position: 'relative', height: '500px', left: offset } }, this.renderPlans()))),
             this.renderModal()));
     }
     renderDays() {

@@ -2,11 +2,13 @@ import invariant from 'invariant';
 import * as moment from 'moment';
 import React, { Component, ReactNode } from 'react';
 import { findDOMNode } from 'react-dom';
+import { HotKeys } from 'react-hotkeys';
 import Modal from 'react-modal';
 import uuid from 'uuid';
 import CalendarItem from './components/CalendarItem';
 import EditPlan from './components/EditPlan';
 import Plan from './components/Plan';
+import { DOWN, LEFT, RIGHT, UP } from './constants';
 import * as Types from './types';
 import elementFromPoint from './utils/elementFromPoint.js';
 import {
@@ -14,10 +16,20 @@ import {
   canAdd,
   canMove,
   createLookupTables,
+  getClosestPlan,
   range
 } from './utils/planner';
 
 const intervalMatch = /(\d+)(m|h)+/;
+
+const keyMap = {
+  deleteNode: ['del', 'backspace'],
+  moveNodeUp: [UP],
+  moveNodeDown: [DOWN],
+  moveNodeRight: [RIGHT],
+  moveNodeLeft: [LEFT],
+  openNode: ['enter']
+};
 
 interface IProps {
   dateEnd?: string;
@@ -53,6 +65,7 @@ class Calendar extends Component<IProps, IState> {
   private coordinates: Types.ICoordinates | null = null;
   private containerWidth: number = 100;
   private containerHeight: number = 50;
+  private handlers: any;
 
   constructor(props: IProps) {
     super(props);
@@ -105,6 +118,14 @@ class Calendar extends Component<IProps, IState> {
       selectedPlan: null,
       highlightedPlan: null
     };
+
+    this.handlers = {
+      deleteNode: this.handleRemoveHighlightedPlan,
+      moveNodeUp: this.handleMoveHighlightedPlan.bind(this.handleMoveHighlightedPlan, UP),
+      moveNodeDown: this.handleMoveHighlightedPlan.bind(this.handleMoveHighlightedPlan, DOWN),
+      moveNodeRight: this.handleMoveHighlightedPlan.bind(this.handleMoveHighlightedPlan, RIGHT),
+      moveNodeLeft: this.handleMoveHighlightedPlan.bind(this.handleMoveHighlightedPlan, LEFT)
+    };
   }
 
   public componentDidMount() {
@@ -142,14 +163,16 @@ class Calendar extends Component<IProps, IState> {
         <div style={{ height: '100%' }}>
           {this.renderDays()}
           {this.renderTimes()}
-          <div
-            className="planner-layout"
-            onDoubleClick={this.handleAddPlan}
-            ref={(ref: any) => { this.grid = ref; }}
-            style={{ width, position: 'relative', height: '500px', left: offset }}
-          >
-            {this.renderPlans()}
-          </div>
+          <HotKeys handlers={this.handlers} keyMap={keyMap}>
+            <div
+              className="planner-layout"
+              onDoubleClick={this.handleAddPlan}
+              ref={(ref: any) => { this.grid = ref; }}
+              style={{ width, position: 'relative', height: '500px', left: offset }}
+            >
+              {this.renderPlans()}
+            </div>
+          </HotKeys>
         </div>
         {this.renderModal()}
       </>
@@ -332,6 +355,27 @@ class Calendar extends Component<IProps, IState> {
           }
         ]);
       }
+    }
+  }
+
+  private handleMoveHighlightedPlan = (direction: string) => {
+    const { highlightedPlan } = this.state;
+    const { plans } = this.props;
+
+    if (highlightedPlan) {
+      const moveTo = getClosestPlan(highlightedPlan, plans, direction);
+
+      if (moveTo) {
+        this.setState({ highlightedPlan: moveTo });
+      }
+    }
+  }
+
+  private handleRemoveHighlightedPlan = () => {
+    const { highlightedPlan } = this.state;
+
+    if (highlightedPlan) {
+      this.handleRemovePlan(highlightedPlan);
     }
   }
 

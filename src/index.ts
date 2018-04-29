@@ -1,6 +1,3 @@
-// Edit mode
-export { default as PlannerGrid } from './Planner';
-
 // Table view of all plans?
 export { default as Plans } from './Plans';
 
