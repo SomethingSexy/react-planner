@@ -1,5 +1,5 @@
 import invariant from 'invariant';
-import * as moment from 'moment';
+// import * as moment from 'moment';
 import React, { Component } from 'react';
 import { findDOMNode } from 'react-dom';
 import { HotKeys } from 'react-hotkeys';
@@ -10,7 +10,7 @@ import EditPlan from './components/EditPlan';
 import Plan from './components/Plan';
 import { DOWN, LEFT, RIGHT, UP } from './constants';
 import elementFromPoint from './utils/elementFromPoint.js';
-import { calculateIntervals, canAdd, canMove, createLookupTables, getClosestPlan, range } from './utils/planner';
+import { calculateIntervals, canAdd, canMove, createLookupTables, getClosestPlan, } from './utils/planner';
 const intervalMatch = /(\d+)(m|h)+/;
 const keyMap = {
     deleteNode: ['del', 'backspace'],
@@ -130,32 +130,38 @@ class Calendar extends Component {
             }
             onUpdatePlans(updatedPlans);
         };
-        const { days, end = 24, dateStart, dateEnd, interval = '5m', start = 6 } = props;
+        const { days, end = 24, 
+        // dateStart,
+        // dateEnd,
+        interval = '5m', start = 6 } = props;
         // TODO: Update this so the dateState is required but endDate can be optional or
         // dervied from days.  Plans will only have dates.
-        invariant(days || dateEnd, 'Days, or end date is required.');
-        invariant(moment(dateStart, 'MM-DD-YYYY').isValid(), 'Start date must be valid.');
-        if (days) {
-            invariant(!Number.isNaN(days), 'Days must be a number or a date range.');
-            invariant(days > 0, 'Days must be greater than one.');
-        }
-        if (dateEnd) {
-            invariant(moment(dateEnd, 'MM-DD-YYYY').isValid(), 'End date must be valid.');
-        }
+        // invariant(
+        //   days || dateEnd,
+        //   'Days, or end date is required.'
+        // );
+        // invariant(moment(dateStart, 'MM-DD-YYYY').isValid(), 'Start date must be valid.');
+        // if (days) {
+        //   invariant(!Number.isNaN(days), 'Days must be a number or a date range.');
+        //   invariant(days > 0, 'Days must be greater than one.');
+        // }
+        // if (dateEnd) {
+        //   invariant(moment(dateEnd, 'MM-DD-YYYY').isValid(), 'End date must be valid.');
+        // }
         invariant(end >= start, 'End time cannot be less than or equal to start time');
         // get the time interval
         const regInterval = new RegExp(intervalMatch, 'g').exec(interval);
         const rawInterval = regInterval ? regInterval[1] : '5';
         // this will build all time intervals per day, this will get used for future lookups
         const intervals = calculateIntervals(parseInt(rawInterval, 10), start, end);
-        const rangeDays = range(dateStart, dateEnd || days);
-        const { byDate, grid } = createLookupTables(rangeDays, intervals);
+        // const rangeDays = range(dateStart, dateEnd || days);
+        const { byDate, grid } = createLookupTables(days, intervals);
         this.state = {
             byDate,
             grid,
             intervals,
-            cols: rangeDays.length,
-            days: rangeDays,
+            cols: days.length,
+            // days: rangeDays,
             selectedPlan: null,
             highlightedPlan: null
         };
@@ -202,7 +208,7 @@ class Calendar extends Component {
             this.renderModal()));
     }
     renderDays() {
-        const { days } = this.state;
+        const { days } = this.props;
         const offset = this.containerWidth;
         const width = `${offset}px`;
         const renderedDays = days.map((day, index) => {
